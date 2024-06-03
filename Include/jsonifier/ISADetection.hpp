@@ -29,8 +29,6 @@
 #include <jsonifier/ISA/Bmi2.hpp>
 #include <jsonifier/ISA/Neon.hpp>
 #include <jsonifier/ISA/AVX.hpp>
-#include <jsonifier/ISA/AVX2.hpp>
-#include <jsonifier/ISA/AVX512.hpp>
 #include <jsonifier/ISA/Fallback.hpp>
 #include <jsonifier/ISA/CollectIndices.hpp>
 #include <jsonifier/ISA/SimdCommon.hpp>
@@ -48,7 +46,7 @@ namespace jsonifier_internal {
 		std::cout << std::endl;
 	}
 
-	template<simd_int_type simd_type> const simd_type& printBits(const simd_type& value, const std::string& valuesTitle) noexcept {
+	template<typename simd_type> const simd_type& printBits(const simd_type& value, const std::string& valuesTitle) noexcept {
 		JSONIFIER_ALIGN uint8_t values[sizeof(simd_type)]{};
 		std::stringstream theStream{};
 		store(value, values);

@@ -28,19 +28,6 @@
 
 namespace jsonifier_internal {
 
-	template<typename value_type01, typename value_type02> constexpr bool stringConstCompare(const value_type01& string01, const value_type02& string02) {
-		if (string01.size() != string02.size()) [[unlikely]] {
-			return false;
-		}
-		using char_t = typename value_type01::value_type;
-		for (uint64_t x = 0; x < string01.size(); ++x) {
-			if (string01[x] != static_cast<char_t>(string02[x])) [[unlikely]] {
-				return false;
-			}
-		}
-		return true;
-	}
-
 	template<typename value_type> class char_traits : public std::char_traits<jsonifier::concepts::unwrap_t<value_type>> {};
 
 	template<jsonifier::concepts::uint8_type value_type_new> class char_traits<value_type_new> {
@@ -78,7 +65,7 @@ namespace jsonifier_internal {
 		static constexpr size_type length(const_pointer first) {
 			const_pointer newPtr = first;
 			size_type count		 = 0;
-			while (newPtr && *newPtr != static_cast<uint8_t>(0x00u)) {
+			while (newPtr && *newPtr != static_cast<uint8_t>('\0')) {
 				++count;
 				++newPtr;
 			}
@@ -225,7 +212,7 @@ namespace jsonifier {
 			return result;
 		}
 
-		constexpr size_type maxSize() {
+		static constexpr size_type maxSize() {
 			const size_type allocMax   = allocator::maxSize();
 			const size_type storageMax = jsonifier_internal::max(allocMax, static_cast<size_type>(bufSize));
 			return std::min(static_cast<size_type>((std::numeric_limits<difference_type>::max)()), storageMax - 1);
@@ -346,7 +333,7 @@ namespace jsonifier {
 			}
 			traits_type::move(dataVal, dataVal + count, sizeVal - count);
 			sizeVal -= count;
-			allocator::construct(&dataVal[sizeVal], static_cast<value_type>(0x00u));
+			allocator::construct(&dataVal[sizeVal], static_cast<value_type>('\0'));
 		}
 
 		JSONIFIER_INLINE void erase(iterator_type count) {
@@ -358,7 +345,7 @@ namespace jsonifier {
 			}
 			traits_type::move(dataVal, dataVal + newSize, sizeVal - newSize);
 			sizeVal -= newSize;
-			allocator::construct(&dataVal[sizeVal], static_cast<value_type>(0x00u));
+			allocator::construct(&dataVal[sizeVal], static_cast<value_type>('\0'));
 		}
 
 		JSONIFIER_INLINE void emplace_back(value_type value) {
@@ -415,7 +402,7 @@ namespace jsonifier {
 
 		virtual JSONIFIER_INLINE void clear() {
 			if (sizeVal > 0) [[likely]] {
-				allocator::construct(dataVal, static_cast<value_type>(0x00u));
+				allocator::construct(dataVal, static_cast<value_type>('\0'));
 			}
 			sizeVal = 0;
 		}

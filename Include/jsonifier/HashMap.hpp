@@ -42,7 +42,7 @@ namespace jsonifier_internal {
 		size_t N{};
 		uint64_t seed{};
 		size_t bucketSize{};
-		size_t minLength		 = (std::numeric_limits<size_t>::max)();
+		size_t minLength = (std::numeric_limits<size_t>::max)();
 		size_t maxLength{};
 	};
 
@@ -108,8 +108,8 @@ namespace jsonifier_internal {
 		} else {
 			uint64_t res{};
 			std::memcpy(&res, bytes, N);
-			constexpr auto num_bytes = sizeof(uint64_t);
-			constexpr auto shift	 = (uint64_t(num_bytes - N) << 3);
+			constexpr auto numBytes = sizeof(uint64_t);
+			constexpr auto shift	= (uint64_t(numBytes - N) << 3);
 			if constexpr (shift == 0) {
 				return res;
 			} else {
@@ -129,7 +129,7 @@ namespace jsonifier_internal {
 	};
 
 	struct naive_hash final {
-		static inline constexpr uint64_t bitmix(uint64_t h) noexcept {
+		static constexpr uint64_t bitmix(uint64_t h) noexcept {
 			h *= 0x9FB21C651E98DF25L;
 			h ^= std::rotr(h, 49);
 			return h;
@@ -145,66 +145,66 @@ namespace jsonifier_internal {
 
 		template<typename char_type> constexpr uint64_t operator()(const jsonifier::string_view_base<char_type> value, const uint64_t seed) noexcept {
 			uint64_t h			  = (0xcbf29ce484222325 ^ seed) * 1099511628211;
-			auto n				  = value.size();
+			auto size			  = value.size();
 			const char_type* data = value.data();
 
-			if (n < 8) {
-				return bitmix(h ^ toUint64NBelow8(data, n));
+			if (size < 8) {
+				return bitmix(h ^ toUint64NBelow8(data, size));
 			}
 
-			const char_type* end7 = data + n - 7;
+			const char_type* end7 = data + size - 7;
 			for (auto d0 = data; d0 < end7; d0 += 8) {
 				h = bitmix(h ^ toUint64(d0));
 			}
 
-			return bitmix(h ^ toUint64(data + n - 8));
+			return bitmix(h ^ toUint64(data + size - 8));
 		}
 
 		template<naive_map_desc D, typename char_type> constexpr uint64_t operator()(const jsonifier::string_view_base<char_type> value) noexcept {
 			constexpr auto h_init = (0xcbf29ce484222325 ^ D.seed) * 1099511628211;
 			if constexpr (D.maxLength < 8) {
-				auto n = value.size();
-				if (n > 7) {
+				auto size = value.size();
+				if (size > 7) {
 					return D.seed;
 				}
-				return bitmix(h_init ^ toUint64NBelow8(value.data(), n));
+				return bitmix(h_init ^ toUint64NBelow8(value.data(), size));
 			} else if constexpr (D.minLength > 7) {
-				auto n = value.size();
+				auto size = value.size();
 
-				if (n < 8) {
+				if (size < 8) {
 					return D.seed;
 				}
 
 				uint64_t h			  = h_init;
 				const char_type* data = value.data();
-				const char_type* end7 = data + n - 7;
+				const char_type* end7 = data + size - 7;
 				for (auto d0 = data; d0 < end7; d0 += 8) {
 					h = bitmix(h ^ toUint64(d0));
 				}
 
-				return bitmix(h ^ toUint64(data + n - 8));
+				return bitmix(h ^ toUint64(data + size - 8));
 			} else {
 				uint64_t h			  = h_init;
-				auto n				  = value.size();
+				auto size			  = value.size();
 				const char_type* data = value.data();
 
-				if (n < 8) {
-					return bitmix(h ^ toUint64NBelow8(data, n));
+				if (size < 8) {
+					return bitmix(h ^ toUint64NBelow8(data, size));
 				}
 
-				const char_type* end7 = data + n - 7;
+				const char_type* end7 = data + size - 7;
 				for (auto d0 = data; d0 < end7; d0 += 8) {
 					h = bitmix(h ^ toUint64(d0));
 				}
 
-				return bitmix(h ^ toUint64(data + n - 8));
+				return bitmix(h ^ toUint64(data + size - 8));
 			}
 		}
 	};
 
 	constexpr bool contains(auto&& data, auto&& val) noexcept {
-		auto n = data.size();
-		for (size_t i = 0; i < n; ++i) {
+		auto size = data.size();
+		for (size_t i = 0; i < size; ++i) {
 			if (data[i] == val) {
 				return true;
 			}
@@ -219,16 +219,16 @@ namespace jsonifier_internal {
 
 		naive_map_desc desc{ N };
 
-		desc.bucketSize		 = (N == 1) ? 1 : std::bit_ceil(N * N) / 2;
-		auto& seed				 = desc.seed;
+		desc.bucketSize = (N == 1) ? 1 : std::bit_ceil(N * N) / 2;
+		auto& seed		= desc.seed;
 
 		for (size_t i = 0; i < N; ++i) {
-			auto n = v[i].size();
-			if (n < desc.minLength) {
-				desc.minLength = n;
+			auto size = v[i].size();
+			if (size < desc.minLength) {
+				desc.minLength = size;
 			}
-			if (n > desc.maxLength) {
-				desc.maxLength = n;
+			if (size > desc.maxLength) {
+				desc.maxLength = size;
 			}
 		}
 
@@ -293,7 +293,7 @@ namespace jsonifier_internal {
 		}
 
 		constexpr decltype(auto) find(auto&& key) const noexcept {
-			auto hash = hash_alg{}.template operator()<D>(key);
+			auto hash  = hash_alg{}.template operator()<D>(key);
 			auto index = table[hash % D.bucketSize];
 			auto& item = items[index];
 			if (item.first != key) [[unlikely]]
@@ -304,13 +304,13 @@ namespace jsonifier_internal {
 
 	template<typename value_type, naive_map_desc D>
 		requires(D.N <= naiveMapMaxSize)
-	constexpr auto makeNaiveMap(const std::array<std::pair<jsonifier::string_view, value_type>, D.N>& pairs) {
+	constexpr decltype(auto) makeNaiveMap(const std::array<std::pair<jsonifier::string_view, value_type>, D.N>& pairs) {
 		naive_map<value_type, D> ht{ pairs };
 
 		using hash_alg = naive_hash;
 
 		for (size_t i = 0; i < D.N; ++i) {
-			auto hash = hash_alg{}.template operator()<D>(pairs[i].first);
+			auto hash					  = hash_alg{}.template operator()<D>(pairs[i].first);
 			ht.table[hash % D.bucketSize] = uint8_t(i);
 		}
 
@@ -333,8 +333,8 @@ namespace jsonifier_internal {
 
 	template<typename Key, typename Value, size_t N> struct normal_map {
 		static constexpr uint64_t storageSize = std::bit_ceil(N) * (N < 32 ? 2 : 1);
-		static constexpr auto maxBucketSize  = 2 * std::bit_width(N);
-		using hash_alg						   = naive_hash;
+		static constexpr auto maxBucketSize	  = 2 * std::bit_width(N);
+		using hash_alg						  = naive_hash;
 		uint64_t seed{};
 		std::array<int64_t, N> buckets{};
 		using storage_type = decltype(fitUnsignedType<N>());
@@ -365,7 +365,7 @@ namespace jsonifier_internal {
 		}
 
 		constexpr decltype(auto) find(auto&& key) const noexcept {
-			auto hash = hash_alg{}(key, seed);
+			auto hash		   = hash_alg{}(key, seed);
 			auto extra		   = buckets[hash % N];
 			const size_t index = extra < 1 ? -extra : table[combine(hash, extra) % storageSize];
 			if constexpr (!std::integral<Key>) {
@@ -437,11 +437,11 @@ namespace jsonifier_internal {
 						failed = true;
 						break;
 					}
-					hashes[i]		 = hash;
-					auto bucket		 = hash % N;
+					hashes[i]		= hash;
+					auto bucket		= hash % N;
 					auto bucketSize = bucketSizes[bucket]++;
 					if (bucketSize == maxBucketSize) {
-						failed		 = true;
+						failed		= true;
 						bucketSizes = {};
 						break;
 					} else {
@@ -468,7 +468,7 @@ namespace jsonifier_internal {
 				}
 				auto table_old = table;
 				do {
-					failed = false;
+					failed			   = false;
 					auto secondarySeed = gen() >> 1;
 					for (size_t i = 0; i < bucketSize; ++i) {
 						auto index = fullBuckets[bucketIndex][i];
@@ -490,21 +490,21 @@ namespace jsonifier_internal {
 	struct single_char_hash_desc {
 		size_t N{};
 		bool valid{};
-		uint8_t min_diff{};
+		uint8_t minDiff{};
 		uint8_t front{};
 		uint8_t back{};
 		bool isFrontHash = true;
-		bool isSumHash   = false;
+		bool isSumHash	 = false;
 	};
 
 	struct single_char_hash_opts {
 		bool isFrontHash = true;
-		bool isSumHash   = false;
+		bool isSumHash	 = false;
 	};
 
 	template<size_t N, single_char_hash_opts Opts = single_char_hash_opts{}>
 		requires(N < 256)
-	inline constexpr single_char_hash_desc singleCharHash(const std::array<jsonifier::string_view, N>& v) noexcept {
+	constexpr single_char_hash_desc singleCharHash(const std::array<jsonifier::string_view, N>& v) noexcept {
 		std::array<uint8_t, N> hashes;
 		for (size_t i = 0; i < N; ++i) {
 			if (v[i].size() == 0) {
@@ -523,18 +523,18 @@ namespace jsonifier_internal {
 
 		std::sort(hashes.begin(), hashes.end());
 
-		uint8_t min_diff = (std::numeric_limits<uint8_t>::max)();
+		uint8_t minDiff = (std::numeric_limits<uint8_t>::max)();
 		for (size_t i = 0; i < N - 1; ++i) {
 			auto diff = uint8_t(hashes[i + 1] - hashes[i]);
 			if (diff == 0) {
 				return {};
 			}
-			if (diff < min_diff) {
-				min_diff = diff;
+			if (diff < minDiff) {
+				minDiff = diff;
 			}
 		}
 
-		return single_char_hash_desc{ N, min_diff > 0, min_diff, hashes.front(), hashes.back(), Opts.isFrontHash, Opts.isSumHash };
+		return single_char_hash_desc{ N, minDiff > 0, minDiff, hashes.front(), hashes.back(), Opts.isFrontHash, Opts.isSumHash };
 	}
 
 	template<typename value_type, single_char_hash_desc D>
@@ -542,7 +542,7 @@ namespace jsonifier_internal {
 	struct single_char_map {
 		static constexpr auto N = D.N;
 		std::array<std::pair<jsonifier::string_view, value_type>, N> items{};
-		static constexpr size_t N_table = D.back - D.front + 1;
+		static constexpr size_t N_table = D.back - D.front + 1ull;
 		std::array<uint8_t, N_table> table{};
 
 		constexpr decltype(auto) begin() const noexcept {
@@ -582,7 +582,7 @@ namespace jsonifier_internal {
 
 	template<typename value_type, single_char_hash_desc D>
 		requires(D.N < 256)
-	constexpr auto makeSingleCharMap(std::initializer_list<std::pair<jsonifier::string_view, value_type>> pairs) {
+	constexpr decltype(auto) makeSingleCharMap(std::initializer_list<std::pair<jsonifier::string_view, value_type>> pairs) {
 		constexpr auto N = D.N;
 		if (pairs.size() != N) {
 			std::abort();
@@ -627,7 +627,7 @@ namespace jsonifier_internal {
 		}
 	};
 
-	template<auto& S, bool checkSize = true, typename string_type> inline constexpr bool cxStringComp(const string_type key) noexcept {
+	template<auto& S, bool checkSize = true, typename string_type> constexpr bool cxStringComp(const string_type key) noexcept {
 		if (std::is_constant_evaluated()) {
 			return key == S;
 		} else {
@@ -642,7 +642,7 @@ namespace jsonifier_internal {
 	template<typename value_type, const jsonifier::string_view& string01, const jsonifier::string_view& string02> struct micro_map2 {
 		std::array<std::pair<jsonifier::string_view, value_type>, 2> items{};
 
-		static constexpr bool sameSize	 = string01.size() == string02.size();
+		static constexpr bool sameSize	= string01.size() == string02.size();
 		static constexpr bool checkSize = !sameSize;
 
 		constexpr decltype(auto) begin() const noexcept {
@@ -655,8 +655,8 @@ namespace jsonifier_internal {
 
 		constexpr decltype(auto) find(auto&& key) const noexcept {
 			if constexpr (sameSize) {
-				constexpr auto n = string01.size();
-				if (key.size() != n) {
+				constexpr auto size = string01.size();
+				if (key.size() != size) {
 					return items.end();
 				}
 			}
@@ -702,8 +702,8 @@ namespace jsonifier_internal {
 	template<typename Tuple> using value_tuple_variant_t = typename value_tuple_variant<Tuple>::type;
 
 	template<typename value_type, size_t I> constexpr jsonifier::string_view getKey() noexcept {
-		constexpr auto& first = get<0>(get<I>(jsonifier::concepts::core_v<value_type>));
-		using T0			  = std::decay_t<decltype(first)>;
+		constexpr decltype(auto) first = std::get<0>(std::get<I>(jsonifier::concepts::core_v<value_type>));
+		using T0					   = std::decay_t<decltype(first)>;
 		if constexpr (std::is_member_pointer_v<T0>) {
 			return getName<first>();
 		} else {
@@ -715,62 +715,61 @@ namespace jsonifier_internal {
 		static constexpr jsonifier::string_view value = getKey<value_type, I>();
 	};
 
-	template<typename value_type, size_t I> constexpr auto keyValue() noexcept {
-		using value_t		  = value_tuple_variant_t<jsonifier::concepts::core_t<value_type>>;
-		constexpr auto& first = get<0>(get<I>(jsonifier::concepts::core_v<value_type>));
-		using T0			  = std::decay_t<decltype(first)>;
+	template<typename value_type, size_t I> constexpr decltype(auto) keyValue() noexcept {
+		using value_t				   = value_tuple_variant_t<jsonifier::concepts::core_t<value_type>>;
+		constexpr decltype(auto) first = std::get<0>(std::get<I>(jsonifier::concepts::core_v<value_type>));
+		using T0					   = std::decay_t<decltype(first)>;
 		if constexpr (std::is_member_pointer_v<T0>) {
 			return std::pair<jsonifier::string_view, value_t>{ getName<first>(), first };
 		} else {
-			return std::pair<jsonifier::string_view, value_t>{ jsonifier::string_view(first), get<1>(get<I>(jsonifier::concepts::core_v<value_type>)) };
+			return std::pair<jsonifier::string_view, value_t>{ jsonifier::string_view(first), std::get<1>(std::get<I>(jsonifier::concepts::core_v<value_type>)) };
 		}
 	}
 
-	template<typename value_type, size_t... I> constexpr auto makeMapImpl(std::index_sequence<I...>) {
-		using value_t	 = value_tuple_variant_t<jsonifier::concepts::core_t<value_type>>;
-		constexpr auto n = std::tuple_size_v<jsonifier::concepts::core_t<value_type>>;
+	template<typename value_type, size_t... I> constexpr decltype(auto) makeMapImpl(std::index_sequence<I...>) {
+		using value_t		= value_tuple_variant_t<jsonifier::concepts::core_t<value_type>>;
+		constexpr auto size = std::tuple_size_v<jsonifier::concepts::core_t<value_type>>;
 
-		if constexpr (n == 0) {
+		if constexpr (size == 0) {
 			return nullptr;
-		} else if constexpr (n == 1) {
+		} else if constexpr (size == 1) {
 			return micro_map1<value_t, core_sv<value_type, I>::value...>{ keyValue<value_type, I>()... };
-		} else if constexpr (n == 2) {
+		} else if constexpr (size == 2) {
 			return micro_map2<value_t, core_sv<value_type, I>::value...>{ keyValue<value_type, I>()... };
-		} else if constexpr (n < 64)
-		{
-			constexpr std::array<jsonifier::string_view, n> keys{ getKey<value_type, I>()... };
-			constexpr auto front_desc = singleCharHash<n>(keys);
+		} else if constexpr (size < 64) {
+			constexpr std::array<jsonifier::string_view, size> keys{ getKey<value_type, I>()... };
+			constexpr auto frontDesc = singleCharHash<size>(keys);
 
-			if constexpr (front_desc.valid) {
-				return makeSingleCharMap<value_t, front_desc>({ keyValue<value_type, I>()... });
+			if constexpr (frontDesc.valid) {
+				return makeSingleCharMap<value_t, frontDesc>({ keyValue<value_type, I>()... });
 			} else {
-				constexpr single_char_hash_opts rear_hash{ .isFrontHash = false };
-				constexpr auto back_desc = singleCharHash<n, rear_hash>(keys);
+				constexpr single_char_hash_opts rearash{ .isFrontHash = false };
+				constexpr auto backDesc = singleCharHash<size, rearash>(keys);
 
-				if constexpr (back_desc.valid) {
-					return makeSingleCharMap<value_t, back_desc>({ keyValue<value_type, I>()... });
+				if constexpr (backDesc.valid) {
+					return makeSingleCharMap<value_t, backDesc>({ keyValue<value_type, I>()... });
 				} else {
-					constexpr single_char_hash_opts sum_hash{ .isFrontHash = true, .isSumHash = true };
-					constexpr auto sum_desc = singleCharHash<n, sum_hash>(keys);
+					constexpr single_char_hash_opts sumHash{ .isFrontHash = true, .isSumHash = true };
+					constexpr auto sumDesc = singleCharHash<size, sumHash>(keys);
 
-					if constexpr (sum_desc.valid) {
-						return makeSingleCharMap<value_t, sum_desc>({ keyValue<value_type, I>()... });
+					if constexpr (sumDesc.valid) {
+						return makeSingleCharMap<value_t, sumDesc>({ keyValue<value_type, I>()... });
 					} else {
-						if constexpr (n <= naiveMapMaxSize) {
-							constexpr auto naive_desc = naiveMapHash<n>(keys);
-							return makeNaiveMap<value_t, naive_desc>({ keyValue<value_type, I>()... });
+						if constexpr (size <= naiveMapMaxSize) {
+							constexpr auto naiveDesc = naiveMapHash<size>(keys);
+							return makeNaiveMap<value_t, naiveDesc>({ keyValue<value_type, I>()... });
 						} else {
-							return normal_map<jsonifier::string_view, value_t, n>({ keyValue<value_type, I>()... });
+							return normal_map<jsonifier::string_view, value_t, size>({ keyValue<value_type, I>()... });
 						}
 					}
 				}
 			}
 		} else {
-			return normal_map<jsonifier::string_view, value_t, n>({ keyValue<value_type, I>()... });
+			return normal_map<jsonifier::string_view, value_t, size>({ keyValue<value_type, I>()... });
 		}
 	}
 
-	template<typename value_type> constexpr auto makeMap() {
+	template<typename value_type> constexpr decltype(auto) makeMap() {
 		constexpr auto indices = std::make_index_sequence<std::tuple_size_v<jsonifier::concepts::core_t<value_type>>>{};
 		return makeMapImpl<jsonifier::concepts::decay_keep_volatile_t<value_type>>(indices);
 	}

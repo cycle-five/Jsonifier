@@ -40,7 +40,7 @@ namespace jsonifier_internal {
 		Minifying	= 3,
 		Prettifying = 4,
 		Validating	= 5,
-	};	
+	};
 
 	enum class parse_errors {
 		Success						= 0,
@@ -125,18 +125,23 @@ namespace jsonifier_internal {
 
 	class error {
 	  public:
-
-		JSONIFIER_INLINE error() noexcept = default;
-
-		template<typename error_type, typename value_type> JSONIFIER_INLINE error(error_classes errorClassNew, int64_t errorIndexNew, int64_t stringLengthNew,
-			value_type* stringViewNew, error_type typeNew, const std::source_location& sourceLocation) noexcept {
-			stringView	 = reinterpret_cast<string_view_ptr>(stringViewNew);
-			errorType	 = static_cast<uint64_t>(typeNew);
+		JSONIFIER_INLINE error(std::source_location sourceLocation, error_classes errorClassNew, int64_t errorIndexNew, int64_t stringLengthNew, const char* stringViewNew,
+			uint64_t typeNew) noexcept {
 			stringLength = stringLengthNew;
-			errorClass	 = errorClassNew;
 			location	 = sourceLocation;
+			stringView	 = stringViewNew;
+			errorClass	 = errorClassNew;
 			errorIndex	 = errorIndexNew;
-			formatError(stringView);
+			errorType	 = typeNew;
+			if (stringView) {
+				formatError(stringView);
+			}
+		}
+
+		template<const std::source_location& sourceLocation, error_classes errorClassNew, auto typeNew, typename value_type>
+		JSONIFIER_INLINE static error constructError(int64_t errorIndexNew, int64_t stringLengthNew, value_type stringViewNew) {
+			error newError{ sourceLocation, errorClassNew, errorIndexNew, stringLengthNew, reinterpret_cast<string_view_ptr>(stringViewNew), static_cast<uint64_t>(typeNew) };
+			return newError;
 		}
 
 		JSONIFIER_INLINE operator bool() {
@@ -147,19 +152,19 @@ namespace jsonifier_internal {
 			return errorType == rhs.errorType && errorIndex == rhs.errorIndex;
 		}
 
-		JSONIFIER_INLINE void formatError(const jsonifier::string& errorString) {
-			if (errorIndex >= errorString.size()) {
+		JSONIFIER_INLINE void formatError(const jsonifier::string_view& errorString) {
+			if (errorIndex >= errorString.size() || errorString.size() == 0) {
 				return;
 			}
 
 			using V			 = std::remove_const_t<std::decay_t<decltype(errorString[0])>>;
 			auto start		 = std::begin(errorString) + static_cast<int64_t>(errorIndex);
 			auto rstart		 = std::rbegin(errorString) + static_cast<int64_t>(errorString.size()) - static_cast<int64_t>(errorIndex) - 1ll;
-			line			 = size_t(std::count(std::begin(errorString), start, static_cast<V>('\n')) + 1);
-			auto prevNewLine = std::find(std::min(rstart + 1, std::rend(errorString)), std::rend(errorString), static_cast<V>('\n'));
+			line			 = size_t(std::count(std::begin(errorString), start, '\n') + 1);
+			auto prevNewLine = std::find(std::min(rstart + 1, std::rend(errorString)), std::rend(errorString), '\n');
 			localIndex		 = start.operator->() - prevNewLine.operator->();
 			auto column		 = std::distance(rstart, prevNewLine);
-			auto nextNewLine = std::find(std::min(start + 1, std::end(errorString)), std::end(errorString), static_cast<V>('\n'));
+			auto nextNewLine = std::find(std::min(start + 1, std::end(errorString)), std::end(errorString), '\n');
 
 			auto offset		  = static_cast<int64_t>(errorIndex);
 			auto contextBegin = std::begin(errorString) + static_cast<int64_t>(offset);
@@ -181,7 +186,7 @@ namespace jsonifier_internal {
 						}
 					}
 				}
-				if (contextEnd - contextBegin < std::string::npos) {
+				if (contextEnd - contextBegin < static_cast<int64_t>(std::string::npos)) {
 					context = jsonifier::string{ contextBegin, static_cast<uint64_t>(contextEnd - contextBegin) };
 				}
 			}
@@ -198,8 +203,6 @@ namespace jsonifier_internal {
 			return returnValue;
 		}
 
-		JSONIFIER_INLINE ~error() = default;
-
 	  protected:
 		std::source_location location{};
 		string_view_ptr stringView{};
@@ -211,23 +214,6 @@ namespace jsonifier_internal {
 		uint64_t errorType{};
 		uint64_t line{};
 	};
-
-	template<typename value_type>
-	concept static_castable = requires(jsonifier::concepts::unwrap_t<value_type> value) { static_cast<const char*>(value); };
-
-	template<typename value_type>
-	concept reinterpret_castable = requires(jsonifier::concepts::unwrap_t<value_type> value) { reinterpret_cast<const char*>(value); };
-
-	template<const std::source_location& sourceLocation, error_classes errorClassNew, typename error_type, typename value_type>
-	JSONIFIER_INLINE error createError(int64_t errorIndex, int64_t stringLengthNew, value_type stringViewNew, error_type errorNew) {
-		if constexpr (reinterpret_castable<value_type>) {
-			error newError(errorClassNew, errorIndex, stringLengthNew, reinterpret_cast<const char*>(stringViewNew), errorNew, sourceLocation);
-			return newError;
-		} else {
-			error newError(errorClassNew, errorIndex, stringLengthNew, static_cast<const char*>(stringViewNew), errorNew, sourceLocation);
-			return newError;
-		}
-	}
 
 	JSONIFIER_INLINE std::ostream& operator<<(std::ostream& os, const error& errorNew) {
 		os << errorNew.reportError();

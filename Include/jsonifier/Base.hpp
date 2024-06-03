@@ -45,11 +45,7 @@
 	#pragma warning(disable : 5246)
 #endif
 
-#if defined(__clang__)
-	#define JSONIFIER_CLANG 1
-#elif defined(__GNUC__) && defined(__llvm__)
-	#define JSONIFIER_CLANG 1
-#elif defined(__APPLE__) && defined(__clang__)
+#if defined(__clang__) || (defined(__GNUC__) && defined(__llvm__)) || (defined(__APPLE__) && defined(__clang__))
 	#define JSONIFIER_CLANG 1
 #elif defined(_MSC_VER)
 	#define JSONIFIER_MSVC 1
@@ -57,15 +53,15 @@
 	#define JSONIFIER_GNUCXX 1
 #endif
 
-#if defined(macintosh) || defined(Macintosh) || (defined(__APPLE__) && defined(__MACH__))
-	#define JSONIFIER_MAC 1
-#elif defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__)
 	#define JSONIFIER_LINUX 1
 #elif defined(WIN32) || defined(_WIN32) || defined(_WIN64)
 	#define JSONIFIER_WIN 1
+#elif defined(macintosh) || defined(Macintosh) || (defined(__APPLE__) && defined(__MACH__))
+	#define JSONIFIER_MAC 1
 #endif
 
-#if defined(__clang__) && defined(NDEBUG) && !defined(JSONIFIER_INLINE)
+#if defined(JSONIFIER_CLANG) && defined(NDEBUG) && !defined(JSONIFIER_INLINE)
 	#define JSONIFIER_INLINE inline __attribute__((always_inline))
 #elif !defined(JSONIFIER_INLINE)
 	#define JSONIFIER_INLINE inline
@@ -120,9 +116,9 @@
 	#define JSONIFIER_ANY_AVX (JSONIFIER_AVX | JSONIFIER_AVX2 | JSONIFIER_AVX512)
 #endif
 
-#if defined(_MSC_VER)
+#if defined(JSONIFIER_MSVC)
 	#define JSONIFIER_VISUAL_STUDIO 1
-	#if defined(__clang__)
+	#if defined(JSONIFIER_CLANG)
 		#define JSONIFIER_CLANG_VISUAL_STUDIO 1
 	#else
 		#define JSONIFIER_REGULAR_VISUAL_STUDIO 1
@@ -160,27 +156,6 @@ using string_parsing_type = uint16_t;
 
 	#include <arm_neon.h>
 
-	#if __CHAR_UNSIGNED__
-		#define CHAR_TYPE uint8_t
-		#define vreinterpretq_x8_x16 vreinterpretq_u8_u16
-		#define vdupq_n_x8 vdupq_n_u8
-		#define vld1q_x16 vld1q_u16
-		#define vpaddq_x8 vpaddq_u8
-		#define vld1q_x8 vld1q_u8
-		#define vceqq_x8 vceqq_u8
-		#define vst1q_x8 vst1q_u8
-	#else
-		#define CHAR_TYPE int8_t
-		#define vreinterpretq_x8_x16 vreinterpretq_s8_s16
-		#define vdupq_n_x8 vdupq_n_s8
-		#define vld1q_x16 vld1q_s16
-		#define vpaddq_x8 vpaddq_s8
-		#define vld1q_x8 vld1q_s8
-		#define vceqq_x8 vceqq_s8
-		#define vst1q_x8 vst1q_s8
-	#endif
-
-
 using simd_int_128 = uint8x16_t;
 using simd_int_256 = uint32_t;
 using simd_int_512 = uint64_t;
@@ -190,24 +165,33 @@ constexpr uint64_t BitsPerStep{ 128 };
 using string_parsing_type = uint16_t;
 #else
 union __m128x {
-	#if JSONIFIER_WIN
-	int8_t m128x_int8[16]{};
+	#if defined(JSONIFIER_WIN)
+	int8_t m128x_int8[16];
 	int16_t m128x_int16[8];
 	int32_t m128x_int32[4];
 	int64_t m128x_int64[2];
 	uint8_t m128x_uint8[16];
-	int16_t m128x_uint16[8];
-	int32_t m128x_uint32[4];
+	uint16_t m128x_uint16[8];
+	uint32_t m128x_uint32[4];
+	uint64_t m128x_uint64[2];
+	#elif JSONIFIER_MAC
+	int8_t m128x_int8[16];
+	int16_t m128x_int16[8];
+	int32_t m128x_int32[4];
+	int64_t m128x_int64[2];
+	uint8_t m128x_uint8[16];
+	uint16_t m128x_uint16[8];
+	uint32_t m128x_uint32[4];
 	uint64_t m128x_uint64[2];
 	#else
 	int64_t m128x_int64[2];
-	int32_t m128x_int32[4];
-	int16_t m128x_int16[8];
-	int8_t m128x_int8[16]{};
-	uint64_t m128x_uint64[2];
-	int32_t m128x_uint32[4];
-	int16_t m128x_uint16[8];
 	uint8_t m128x_uint8[16];
+	uint16_t m128x_uint16[8];
+	uint32_t m128x_uint32[4];
+	uint64_t m128x_uint64[2];
+	int8_t m128x_int8[16];
+	int16_t m128x_int16[8];
+	int32_t m128x_int32[4];
 	#endif
 };
 using simd_int_128 = __m128x;
@@ -233,5 +217,3 @@ template<typename value_type>
 concept simd_int_256_type = std::is_same_v<simd_int_256, jsonifier::concepts::unwrap_t<value_type>>;
 template<typename value_type>
 concept simd_int_128_type = std::is_same_v<simd_int_128, jsonifier::concepts::unwrap_t<value_type>>;
-template<typename value_type>
-concept simd_int_type = std::is_same_v<simd_int_t, jsonifier::concepts::unwrap_t<value_type>>;

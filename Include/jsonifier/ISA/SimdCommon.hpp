@@ -30,8 +30,6 @@
 #include <jsonifier/ISA/GatherValues.hpp>
 #include <jsonifier/ISA/Fallback.hpp>
 #include <jsonifier/ISA/AVX.hpp>
-#include <jsonifier/ISA/AVX2.hpp>
-#include <jsonifier/ISA/AVX512.hpp>
 #include <iostream>
 #include <concepts>
 #include <sstream>
@@ -52,7 +50,7 @@ namespace simd_internal {
 
 	template<jsonifier::concepts::unsigned_type value_type> void printBits(value_type values, const std::string& valuesTitle);
 
-	template<simd_int_type simd_type> const simd_type& printBits(const simd_type& value, const std::string& valuesTitle) noexcept;
+	template<typename simd_type> const simd_type& printBits(const simd_type& value, const std::string& valuesTitle) noexcept;
 
 	JSONIFIER_INLINE static uint64_t prefixXor(uint64_t prevInString) {
 		prevInString ^= prevInString << 1;

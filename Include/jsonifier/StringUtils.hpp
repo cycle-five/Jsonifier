@@ -221,7 +221,7 @@ namespace jsonifier_internal {
 	}
 
 	template<typename iterator_type01> JSONIFIER_INLINE void skipShortStringImpl(iterator_type01& string1, uint64_t& lengthNew) {
-		static constexpr uint8_t quotesValue{ static_cast<uint8_t>('"') };
+		static constexpr char quotesValue{ static_cast<char>('"') };
 		while (static_cast<int64_t>(lengthNew) > 0) {
 			if (*string1 == quotesValue || *string1 == '\\') {
 				auto escapeChar = *string1;
@@ -243,7 +243,7 @@ namespace jsonifier_internal {
 		using char_type01 =
 			typename std::conditional_t<std::is_pointer_v<iterator_type01>, std::remove_pointer_t<iterator_type01>, typename std::iterator_traits<iterator_type01>::value_type>;
 		std::remove_const_t<char_type01> escapeChar;
-		static constexpr uint8_t quotesValue{ static_cast<uint8_t>('"') };
+		static constexpr char quotesValue{ static_cast<char>('"') };
 #if JSONIFIER_CHECK_FOR_AVX(JSONIFIER_AVX512)
 		{
 			using integer_type						 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_integer_list, 3>::type::integer_type;
@@ -384,7 +384,7 @@ namespace jsonifier_internal {
 						}
 						continue;
 					}
-					escapeChar = escapeMap<uint8_t>[escapeChar];
+					escapeChar = escapeMap<char>[escapeChar];
 					if (escapeChar == 0) {
 						return string2;
 					}
@@ -435,7 +435,7 @@ namespace jsonifier_internal {
 							}
 							continue;
 						}
-						escapeChar = escapeMap<uint8_t>[escapeChar];
+						escapeChar = escapeMap<char>[escapeChar];
 						if (escapeChar == 0u) {
 							return static_cast<iterator_type02>(nullptr);
 						}
@@ -482,7 +482,7 @@ namespace jsonifier_internal {
 							}
 							continue;
 						}
-						escapeChar = escapeMap<uint8_t>[escapeChar];
+						escapeChar = escapeMap<char>[escapeChar];
 						if (escapeChar == 0u) {
 							return string2;
 						}
@@ -529,7 +529,7 @@ namespace jsonifier_internal {
 							}
 							continue;
 						}
-						escapeChar = escapeMap<uint8_t>[escapeChar];
+						escapeChar = escapeMap<char>[escapeChar];
 						if (escapeChar == 0u) {
 							return string2;
 						}
@@ -575,7 +575,7 @@ namespace jsonifier_internal {
 							}
 							continue;
 						}
-						escapeChar = escapeMap<uint8_t>[escapeChar];
+						escapeChar = escapeMap<char>[escapeChar];
 						if (escapeChar == 0u) {
 							return string2;
 						}
@@ -807,14 +807,14 @@ namespace jsonifier_internal {
 	}
 
 	template<const auto& options, typename value_type, simd_structural_iterator_t iterator_type>
-	JSONIFIER_INLINE void parseString(value_type&& value, iterator_type&& iter, iterator_type&& end, jsonifier::vector<error>& errors) {
+	JSONIFIER_INLINE void parseString(value_type&& value, iterator_type&& iter, iterator_type&& end) {
 		auto newPtr = iter.operator->();
 		if (*iter == 0x22u) [[likely]] {
 			++iter;
 		} else {
 			static constexpr auto sourceLocation{ std::source_location::current() };
-			errors.emplace_back(
-				createError<sourceLocation, error_classes::Parsing>(iter - options.rootIter, end - options.rootIter, options.rootIter, parse_errors::Missing_String_Start));
+			options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - options.rootIter,
+				end - options.rootIter, options.rootIter));
 			skipToNextValue(iter, end);
 			return;
 		}
@@ -828,53 +828,47 @@ namespace jsonifier_internal {
 			auto newestPtr = parseStringImpl(newPtr, newString.data(), newSize);
 			if (newestPtr) [[likely]] {
 				newSize = static_cast<uint64_t>(newestPtr - newString.data());
-				if (value.size() != newSize) {
+				if (value.size() != newSize || !compare(value.data(), newString.data(), newSize)) {
 					value.resize(newSize);
+					std::memcpy(value.data(), newString.data(), newSize);
 				}
-				std::memcpy(value.data(), newString.data(), newSize);
 			} else {
 				static constexpr auto sourceLocation{ std::source_location::current() };
-				errors.emplace_back(createError<sourceLocation, error_classes::Parsing>(iter - options.rootIter, end - options.rootIter, options.rootIter,
-					parse_errors::Invalid_String_Characters));
+				options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_String_Characters>(
+					iter - options.rootIter, end - options.rootIter, options.rootIter));
 				skipToNextValue(iter, end);
 				return;
 			}
 		}
 	}
 
-	template<const auto& options, typename value_type, typename iterator_type>
-	JSONIFIER_INLINE void parseString(value_type&& value, iterator_type&& iter, iterator_type&& end, jsonifier::vector<error>& errors) {
+	template<const auto& options, typename value_type, typename iterator_type> JSONIFIER_INLINE void parseString(value_type&& value, iterator_type&& iter, iterator_type&& end) {
 		if (*iter == '"') [[unlikely]] {
 			++iter;
 		} else {
 			static constexpr auto sourceLocation{ std::source_location::current() };
-			errors.emplace_back(
-				createError<sourceLocation, error_classes::Parsing>(iter - options.rootIter, end - options.rootIter, options.rootIter, parse_errors::Missing_String_Start));
+			options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - options.rootIter,
+				end - options.rootIter, options.rootIter));
 			return;
 		}
-		static thread_local jsonifier::string_base<uint8_t, 1024 * 1024> newString{};
+		static thread_local jsonifier::string_base<char, 1024 * 1024> newString{};
 		auto newSize = end - iter;
 		if (newSize > 0) {
 			if (newSize > newString.size()) [[unlikely]] {
 				newString.resize(static_cast<uint64_t>(newSize));
 			}
-			auto newerPtr  = iter;
-			auto newestPtr = parseStringImpl(newerPtr, newString.data(), newSize);
+			auto newestPtr = parseStringImpl(iter, newString.data(), newSize);
 			if (newestPtr) [[likely]] {
-				if constexpr (!options.optionsReal.minified) {
-					++iter;
-				} else {
-					iter += newerPtr - iter + 1;
-				}
+				++iter;
 				newSize = static_cast<uint64_t>(newestPtr - newString.data());
-				if (value.size() != newSize) {
+				if (value.size() != newSize || !compare(value.data(), newString.data(), newSize)) {
 					value.resize(newSize);
 					std::memcpy(value.data(), newString.data(), newSize);
 				}
 			} else {
 				static constexpr auto sourceLocation{ std::source_location::current() };
-				errors.emplace_back(createError<sourceLocation, error_classes::Parsing>(iter - options.rootIter, end - options.rootIter, options.rootIter,
-					parse_errors::Invalid_String_Characters));
+				options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_String_Characters>(
+					iter - options.rootIter, end - options.rootIter, options.rootIter));
 				return;
 			}
 		}

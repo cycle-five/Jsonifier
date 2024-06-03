@@ -29,6 +29,10 @@ namespace simd_internal {
 
 #if JSONIFIER_CHECK_FOR_INSTRUCTION(JSONIFIER_BMI) || JSONIFIER_CHECK_FOR_INSTRUCTION(JSONIFIER_ANY_AVX)
 
+	template<jsonifier::concepts::uint16_type value_type> JSONIFIER_INLINE value_type blsr(value_type value) {
+		return static_cast<uint16_t>(_blsr_u32(static_cast<uint16_t>(value)));
+	}
+
 	template<jsonifier::concepts::uint32_type value_type> JSONIFIER_INLINE value_type blsr(value_type value) {
 		return _blsr_u32(value);
 	}
@@ -60,7 +64,7 @@ namespace simd_internal {
 	}
 
 	template<jsonifier::concepts::uint16_type value_type> JSONIFIER_INLINE value_type tzcnt(value_type value) {
-	#if JSONIFIER_REGULAR_VISUAL_STUDIO
+	#if defined(JSONIFIER_REGULAR_VISUAL_STUDIO)
 		return _tzcnt_u16(value);
 	#else
 		return __builtin_ctz(value);
@@ -68,7 +72,7 @@ namespace simd_internal {
 	}
 
 	template<jsonifier::concepts::uint32_type value_type> JSONIFIER_INLINE value_type tzcnt(value_type value) {
-	#if JSONIFIER_REGULAR_VISUAL_STUDIO
+	#if defined(JSONIFIER_REGULAR_VISUAL_STUDIO)
 		return _tzcnt_u32(value);
 	#else
 		return __builtin_ctz(value);
@@ -76,7 +80,7 @@ namespace simd_internal {
 	}
 
 	template<jsonifier::concepts::uint64_type value_type> JSONIFIER_INLINE value_type tzcnt(value_type value) {
-	#if JSONIFIER_REGULAR_VISUAL_STUDIO
+	#if defined(JSONIFIER_REGULAR_VISUAL_STUDIO)
 		return _tzcnt_u64(value);
 	#else
 		return __builtin_ctzll(value);

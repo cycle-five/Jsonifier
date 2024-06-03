@@ -76,7 +76,7 @@ namespace jsonifier_internal {
 		++index;
 	}
 
-	template<uint_string_literal str, jsonifier::concepts::buffer_like buffer_type> JSONIFIER_INLINE void writeCharacters(buffer_type& buffer, uint64_t& index) noexcept {
+	template<string_literal str, jsonifier::concepts::buffer_like buffer_type> JSONIFIER_INLINE void writeCharacters(buffer_type& buffer, uint64_t& index) noexcept {
 		static constexpr auto s = str.operator jsonifier::string_view();
 		static constexpr auto n = s.size();
 
@@ -97,7 +97,7 @@ namespace jsonifier_internal {
 		++index;
 	}
 
-	template<uint_string_literal str, jsonifier::concepts::buffer_like buffer_type> JSONIFIER_INLINE void writeCharactersUnchecked(buffer_type& buffer, uint64_t& index) noexcept {
+	template<string_literal str, jsonifier::concepts::buffer_like buffer_type> JSONIFIER_INLINE void writeCharactersUnchecked(buffer_type& buffer, uint64_t& index) noexcept {
 		static constexpr auto s = str.operator jsonifier::string_view();
 		static constexpr auto n = s.size();
 
@@ -154,7 +154,17 @@ namespace jsonifier_internal {
 		index += n;
 	}
 
-	template<const auto& options, jsonifier::concepts::buffer_like buffer_type> inline void writeNewLine(buffer_type& buffer, uint64_t& index) {
+	template<const auto& options, jsonifier::concepts::buffer_like buffer_type> JSONIFIER_INLINE void writeNewLineUnchecked(buffer_type& buffer, uint64_t& index) {
+		const auto indent	   = options.indent;
+		const auto indentSize  = options.optionsReal.indentSize;
+		const auto indentTotal = indent * indentSize;
+		buffer[index]		   = '\n';
+		++index;
+		std::memset(buffer.data() + index, options.optionsReal.indentChar, indentTotal);
+		index += indentTotal;
+	};
+
+	template<const auto& options, jsonifier::concepts::buffer_like buffer_type> JSONIFIER_INLINE void writeNewLine(buffer_type& buffer, uint64_t& index) {
 		auto indent			   = options.indent;
 		auto indentSize		   = options.optionsReal.indentSize;
 		const auto indentTotal = indent * indentSize;
@@ -347,11 +357,11 @@ namespace jsonifier_internal {
 		++index;
 	}
 
-	template<uint_string_literal Str> struct chars_impl {
+	template<string_literal Str> struct chars_impl {
 		static constexpr jsonifier::string_view value{ Str.values, Str.size() };
 	};
 
-	template<uint_string_literal Str> constexpr jsonifier::string_view chars = chars_impl<Str>::value;
+	template<string_literal Str> constexpr jsonifier::string_view chars = chars_impl<Str>::value;
 
 	template<const jsonifier::string_view&... Strs> JSONIFIER_INLINE constexpr jsonifier::string_view join() {
 		constexpr auto joined_arr = []() {

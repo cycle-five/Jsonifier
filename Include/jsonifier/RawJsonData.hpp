@@ -256,18 +256,18 @@ namespace jsonifier_internal {
 				return newString;
 			};
 
-			newIter01	  = simd_internal::collectNextNonWhiteSpaceIndex(newIter01.operator->(), static_cast<uint64_t>(endIter01 - newIter01));
+			skipWs(newIter01);
 			auto newCount = countValueElements<'{', '}'>(newIter02, endIter01);
 			collectCharacter('{');
 			for (uint64_t x = 0; x < newCount && newIter02 < endIter01 && newIter01 < endIter01; ++x) {
-				newIter01	= simd_internal::collectNextNonWhiteSpaceIndex(newIter01.operator->(), static_cast<uint64_t>(endIter01 - newIter01));
+				skipWs(newIter01);
 				auto newKey = collectKey();
-				newIter01	= simd_internal::collectNextNonWhiteSpaceIndex(newIter01.operator->(), static_cast<uint64_t>(endIter01 - newIter01));
+				skipWs(newIter01);
 				collectCharacter(0x3A);
-				newIter01 = simd_internal::collectNextNonWhiteSpaceIndex(newIter01.operator->(), static_cast<uint64_t>(endIter01 - newIter01));
+				skipWs(newIter01);
 				bool endValue{ x == newCount - 1 };
 				results[newKey] = collectValue(endValue);
-				newIter01		= simd_internal::collectNextNonWhiteSpaceIndex(newIter01.operator->(), static_cast<uint64_t>(endIter01 - newIter01));
+				skipWs(newIter01);
 				collectCharacter(',');
 			}
 		}
@@ -307,14 +307,14 @@ namespace jsonifier_internal {
 				return newString;
 			};
 
-			newIter01	  = simd_internal::collectNextNonWhiteSpaceIndex(newIter01.operator->(), static_cast<uint64_t>(endIter01 - newIter01));
+			skipWs(newIter01);
 			auto newCount = countValueElements<'[', ']'>(newIter02, endIter01);
 			collectCharacter('[');
 			for (uint64_t x = 0; x < newCount && newIter02 < endIter01 && newIter01 < endIter01; ++x) {
-				newIter01 = simd_internal::collectNextNonWhiteSpaceIndex(newIter01.operator->(), static_cast<uint64_t>(endIter01 - newIter01));
+				skipWs(newIter01);
 				bool endValue{ x == newCount - 1 };
 				results.emplace_back(collectValue(endValue));
-				newIter01 = simd_internal::collectNextNonWhiteSpaceIndex(newIter01.operator->(), static_cast<uint64_t>(endIter01 - newIter01));
+				skipWs(newIter01);
 				collectCharacter(',');
 			}
 		}

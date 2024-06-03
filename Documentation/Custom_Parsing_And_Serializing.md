@@ -14,7 +14,7 @@ The `parser::impl` structure is designed to handle the parsing of JSON data with
 
 ```cpp
 template<jsonifier::concepts::bool_t value_type_new, typename derived_type>
-struct parser::impl<value_type_new, derived_type> : public derailleur {
+struct parser::template impl<value_type_new, derived_type> : public derailleur {
     template<jsonifier::concepts::bool_t value_type, jsonifier::concepts::is_fwd_iterator iterator_type>
     JSONIFIER_INLINE void impl(value_type&& value, iterator_type&& iter) {
         // Custom parsing logic goes here
@@ -69,7 +69,7 @@ Similarly, the `parser::impl` specialization for time stamps is structured as fo
 
 ```cpp
 template<time_stamp_t value_type_new, typename derived_type>
-struct parser::impl<value_type_new, derived_type> {
+struct parser::template impl<value_type_new, derived_type> {
     template<time_stamp_t value_type, jsonifier::concepts::is_fwd_iterator iterator>
     JSONIFIER_INLINE void impl(value_type&& value, iterator&& iter) {
         jsonifier::string newString{};

@@ -32,8 +32,8 @@ namespace jsonifier_internal {
 
 	// https://en.wikipedia.org/wiki/Fowler-Noll-Vo_hash_function
 	// http://www.isthe.com/chongo/tech/comp/fnv/index.html#FNV-param
-	static constexpr uint32_t fnv32OffsetBasis{ 0x811c9dc5u };
-	static constexpr uint32_t fnv32Prime{ 0x01000193u };
+	constexpr uint32_t fnv32OffsetBasis{ 0x811c9dc5u };
+	constexpr uint32_t fnv32Prime{ 0x01000193u };
 
 	JSONIFIER_INLINE uint32_t fnv1aHashRt(const void* value, uint64_t size) {
 		uint32_t hash	   = fnv32OffsetBasis * fnv32Prime;

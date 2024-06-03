@@ -27,9 +27,9 @@
 
 namespace jsonifier_internal {
 
-	template<const prettify_options_internal& options, typename derived_type> struct prettify_impl {
-		template<jsonifier::concepts::string_t string_type, typename iterator_type>
-		JSONIFIER_INLINE static void impl(iterator_type& iter, string_type&& out, uint64_t& index) noexcept {
+	template<typename derived_type> struct prettify_impl {
+		template<const prettify_options_internal<derived_type>& options, jsonifier::concepts::string_t string_type, typename iterator_type>
+		JSONIFIER_INLINE static void impl(iterator_type&& iter, string_type&& out, uint64_t& index) noexcept {
 			jsonifier::vector<json_structural_type> state{};
 			state.resize(64);
 
@@ -46,10 +46,10 @@ namespace jsonifier_internal {
 						writeCharacterUnchecked<','>(out, index);
 						++iter;
 						if constexpr (options.optionsReal.newLinesInArray) {
-							writeNewLine<options>(out, index);
+							writeNewLineUnchecked<options>(out, index);
 						} else {
 							if (state[options.indent] == json_structural_type::Object_Start) {
-								writeNewLine<options>(out, index);
+								writeNewLineUnchecked<options>(out, index);
 							} else {
 								writeCharacterUnchecked<options.optionsReal.indentChar>(out, index);
 							}
@@ -79,7 +79,7 @@ namespace jsonifier_internal {
 						}
 						if constexpr (options.optionsReal.newLinesInArray) {
 							if (*iter != ']') {
-								writeNewLine<options>(out, index);
+								writeNewLineUnchecked<options>(out, index);
 							}
 						}
 						break;
@@ -88,12 +88,14 @@ namespace jsonifier_internal {
 						--options.indent;
 						if (options.indent < 0) {
 							static constexpr auto sourceLocation{ std::source_location::current() };
-							iter.template createError<sourceLocation, error_classes::Prettifying>(prettify_errors::Incorrect_Structural_Index);
+							options.prettifierPtr->getErrors().emplace_back(
+								error::constructError<sourceLocation, error_classes::Prettifying, prettify_errors::Incorrect_Structural_Index>(iter.getCurrentStringIndex(),
+									iter.getStringLength(), iter.getRootPtr()));
 							return;
 						}
 						if constexpr (options.optionsReal.newLinesInArray) {
-							if (*(iter.sub(1)) != '[') {
-								writeNewLine<options>(out, index);
+							if (iter.sub(1) != '[') {
+								writeNewLineUnchecked<options>(out, index);
 							}
 						}
 						writeCharacterUnchecked<']'>(out, index);
@@ -125,7 +127,7 @@ namespace jsonifier_internal {
 							state.resize(state.size() * 2);
 						}
 						if (*iter != '}') {
-							writeNewLine<options>(out, index);
+							writeNewLineUnchecked<options>(out, index);
 						}
 						break;
 					}
@@ -133,19 +135,27 @@ namespace jsonifier_internal {
 						--options.indent;
 						if (options.indent < 0) {
 							static constexpr auto sourceLocation{ std::source_location::current() };
-							iter.template createError<sourceLocation, error_classes::Prettifying>(prettify_errors::Incorrect_Structural_Index);
+							options.prettifierPtr->getErrors().emplace_back(
+								error::constructError<sourceLocation, error_classes::Prettifying, prettify_errors::Incorrect_Structural_Index>(iter.getCurrentStringIndex(),
+									iter.getStringLength(), iter.getRootPtr()));
 							return;
 						}
-						if (*(iter.sub(1)) != '{') {
-							writeNewLine<options>(out, index);
+						if (iter.sub(1) != '{') {
+							writeNewLineUnchecked<options>(out, index);
 						}
 						writeCharacterUnchecked<'}'>(out, index);
 						++iter;
 						break;
 					}
+					[[unlikely]] case json_structural_type::Unset:
+					[[unlikely]] case json_structural_type::Error:
+					[[unlikely]] case json_structural_type::Type_Count:
+						[[fallthrough]];
 					[[unlikely]] default: {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						iter.template createError<sourceLocation, error_classes::Prettifying>(prettify_errors::Incorrect_Structural_Index);
+						options.prettifierPtr->getErrors().emplace_back(
+							error::constructError<sourceLocation, error_classes::Prettifying, prettify_errors::Incorrect_Structural_Index>(iter.getCurrentStringIndex(),
+								iter.getStringLength(), iter.getRootPtr()));
 						return;
 					}
 				}

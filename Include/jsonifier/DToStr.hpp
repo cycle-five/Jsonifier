@@ -353,7 +353,7 @@ namespace jsonifier_internal {
 		uint32_t bb		   = abb - a * 100;
 		uint32_t cc		   = abbcc - abb * 100;
 
-		buf[0] = char_type(a + 0x30u);
+		buf[0] = char_type(a + '0');
 		buf += a > 0;
 		bool lz = bb < 10 && a == 0;
 		std::memcpy(buf, charTable + (bb * 2 + lz), 2);
@@ -423,11 +423,11 @@ namespace jsonifier_internal {
 		raw_t raw;
 		std::memcpy(&raw, &value, sizeof(value_type));
 
-		constexpr uint32_t exponentBits = numbits<std::numeric_limits<value_type>::max_exponent - std::numeric_limits<value_type>::min_exponent + 1>();
-		constexpr raw_t sigMask			= raw_t(-1) >> (exponentBits + 1);
-		bool sign						= (raw >> (sizeof(value_type) * 8 - 1));
-		uint64_t sigRaw					= raw & sigMask;
-		int32_t expRaw					= static_cast<int32_t>(raw << 1 >> (sizeof(raw_t) * 8 - exponentBits));
+		static constexpr uint32_t exponentBits = numbits<std::numeric_limits<value_type>::max_exponent - std::numeric_limits<value_type>::min_exponent + 1>();
+		static constexpr raw_t sigMask		   = raw_t(-1) >> (exponentBits + 1);
+		bool sign							   = (raw >> (sizeof(value_type) * 8 - 1));
+		uint64_t sigRaw						   = raw & sigMask;
+		int32_t expRaw						   = static_cast<int32_t>(raw << 1 >> (sizeof(raw_t) * 8 - exponentBits));
 
 		if (expRaw == (uint32_t(1) << exponentBits) - 1) [[unlikely]] {
 			std::memcpy(buffer, "null", 4);
@@ -465,15 +465,15 @@ namespace jsonifier_internal {
 				if (dotPos <= 0) {
 					auto numHdr = buffer + (2 - dotPos);
 					auto numEnd = writeU64Len15To17Trim(numHdr, sigDec);
-					buffer[0]	= 0x30u;
+					buffer[0]	= '0';
 					buffer[1]	= '.';
 					buffer += 2;
-					std::memset(buffer, 0x30u, static_cast<uint64_t>(numHdr - buffer));
+					std::memset(buffer, '0', static_cast<uint64_t>(numHdr - buffer));
 					return numEnd;
 				} else {
-					std::memset(buffer, 0x30u, 8);
-					std::memset(buffer + 8, 0x30u, 8);
-					std::memset(buffer + 16, 0x30u, 8);
+					std::memset(buffer, '0', 8);
+					std::memset(buffer + 8, '0', 8);
+					std::memset(buffer + 16, '0', 8);
 					auto numHdr = buffer + 1;
 					auto numEnd = writeU64Len15To17Trim(numHdr, sigDec);
 					std::memmove(buffer, buffer + 1, static_cast<uint64_t>(dotPos));
@@ -498,13 +498,13 @@ namespace jsonifier_internal {
 				} else {
 					const uint32_t hi = (uint32_t(expDec) * 656) >> 16;
 					const uint32_t lo = uint32_t(expDec) - hi * 100;
-					buffer[0]		  = char_type(hi) + char_type(0x30);
+					buffer[0]		  = char_type(hi) + char_type('0');
 					std::memcpy(&buffer[1], charTable + (lo * 2), 2);
 					return buffer + 3;
 				}
 			}
 		} else [[unlikely]] {
-			*buffer = 0x30u;
+			*buffer = '0';
 			return buffer + 1;
 		}
 	}

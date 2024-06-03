@@ -126,7 +126,7 @@ namespace jsonifier {
 			return dataVal;
 		}
 
-		constexpr size_type maxSize() const {
+		static constexpr size_type maxSize() {
 			return std::min(static_cast<uint64_t>(std::numeric_limits<std::ptrdiff_t>::max()), static_cast<uint64_t>(-1) / sizeof(value_type));
 		}
 
@@ -150,27 +150,27 @@ namespace jsonifier {
 		}
 
 		template<typename... arg_types> constexpr size_type rfind(arg_types&&... args) const {
-			return operator std::basic_string_view<value_type>().rfind(std::forward<arg_types>(args)...);
+			return this->operator std::basic_string_view<value_type>().rfind(std::forward<arg_types>(args)...);
 		}
 
 		template<typename... arg_types> constexpr size_type find(arg_types&&... args) const {
-			return operator std::basic_string_view<value_type>().find(std::forward<arg_types>(args)...);
+			return this->operator std::basic_string_view<value_type>().find(std::forward<arg_types>(args)...);
 		}
 
 		template<typename... arg_types> constexpr size_type findFirstOf(arg_types&&... args) const {
-			return operator std::basic_string_view<value_type>().find_first_of(std::forward<arg_types>(args)...);
+			return this->operator std::basic_string_view<value_type>().find_first_of(std::forward<arg_types>(args)...);
 		}
 
 		template<typename... arg_types> constexpr size_type findLastOf(arg_types&&... args) const {
-			return operator std::basic_string_view<value_type>().find_last_of(std::forward<arg_types>(args)...);
+			return this->operator std::basic_string_view<value_type>().find_last_of(std::forward<arg_types>(args)...);
 		}
 
 		template<typename... arg_types> constexpr size_type findFirstNotOf(arg_types&&... args) const {
-			return operator std::basic_string_view<value_type>().find_first_not_of(std::forward<arg_types>(args)...);
+			return this->operator std::basic_string_view<value_type>().find_first_not_of(std::forward<arg_types>(args)...);
 		}
 
 		template<typename... arg_types> constexpr size_type findLastNotOf(arg_types&&... args) const {
-			return operator std::basic_string_view<value_type>().find_last_not_of(std::forward<arg_types>(args)...);
+			return this->operator std::basic_string_view<value_type>().find_last_not_of(std::forward<arg_types>(args)...);
 		}
 
 		constexpr void swap(string_view_base& other) {

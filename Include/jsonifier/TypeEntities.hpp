@@ -36,7 +36,7 @@ namespace jsonifier_internal {
 
 	template<typename derived_type> class parser;
 
-	class simd_structural_iterator;
+	class json_structural_iterator;
 
 	template<typename... value_types> class array_tuple : public std::tuple<value_types...> {};
 }
@@ -55,7 +55,7 @@ namespace jsonifier {
 
 	template<typename value_type> struct value {
 		value_type parseValue;
-	};	
+	};
 
 	template<typename value_type> value(value_type) -> value<value_type>;
 
@@ -89,8 +89,8 @@ namespace jsonifier {
 			{ value.end() } -> std::same_as<typename unwrap_t<value_type>::const_iterator>;
 		} || requires(unwrap_t<value_type> value) {
 			typename unwrap_t<value_type>::value_type;
-			{ value.begin() } -> std::same_as<typename unwrap_t<value_type>::iterator_type>;
-			{ value.end() } -> std::same_as<typename unwrap_t<value_type>::iterator_type>;
+			{ value.begin() } -> std::same_as<typename unwrap_t<value_type>::iterator>;
+			{ value.end() } -> std::same_as<typename unwrap_t<value_type>::iterator>;
 		};
 
 		template<typename value_type>
@@ -306,7 +306,7 @@ namespace jsonifier {
 			static constexpr std::tuple<> parseValue{};
 		};
 
-		template<typename value_type> inline constexpr decltype(auto) core_wrapper_v = [] {
+		template<typename value_type> constexpr auto core_wrapper_v = [] {
 			if constexpr (jsonifier_t<value_type>) {
 				return jsonifier::core<value_type>::parseValue;
 			} else {
@@ -323,7 +323,7 @@ namespace jsonifier {
 		template<typename value_type>
 		concept skip_value_t = std::is_same_v<unwrap_t<value_type>, skip_value>;
 
-		template<typename value_type> inline constexpr auto core_v = core_wrapper_v<decay_keep_volatile_t<value_type>>.parseValue;
+		template<typename value_type> constexpr auto core_v = core_wrapper_v<decay_keep_volatile_t<value_type>>.parseValue;
 
 		template<typename value_type> using core_t = decay_keep_volatile_t<decltype(core_v<value_type>)>;
 
@@ -411,6 +411,6 @@ namespace std {
 namespace jsonifier_internal {
 
 	template<typename value_type>
-	concept simd_structural_iterator_t = std::is_same_v<jsonifier::concepts::unwrap_t<value_type>, simd_structural_iterator>;
+	concept simd_structural_iterator_t = std::is_same_v<jsonifier::concepts::unwrap_t<value_type>, json_structural_iterator>;
 
 }

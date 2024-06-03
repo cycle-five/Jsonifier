@@ -37,7 +37,7 @@ namespace jsonifier_internal {
 		return static_cast<int64_t>(value) >= 0 ? (value / multiple) * multiple : ((value - multiple + 1) / multiple) * multiple;
 	}
 
-#if defined(_MSC_VER)
+#if defined(JSONIFIER_MSVC)
 
 	template<typename value_type> JSONIFIER_INLINE value_type* jsonifierAlignedAlloc(uint64_t size) {
 		return static_cast<value_type*>(_aligned_malloc(roundUpToMultiple<BytesPerStep>(size * sizeof(value_type)), BytesPerStep));
@@ -83,8 +83,8 @@ namespace jsonifier_internal {
 			new (ptr) value_type(std::forward<arg_types>(args)...);
 		}
 
-		JSONIFIER_INLINE size_type maxSize() {
-			return allocator_traits::max_size(*this);
+		JSONIFIER_INLINE static size_type maxSize() {
+			return allocator_traits::max_size(alloc_wrapper{});
 		}
 
 		JSONIFIER_INLINE void destroy(pointer ptr) {
