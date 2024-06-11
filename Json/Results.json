@@ -4,15 +4,15 @@
          {
             "libraryName": "jsonifier",
             "resultType": "Read",
-            "resultSpeed": 80.36434317022923,
-            "Mape": 2.560384196268394,
+            "resultSpeed": 73.96948175933835,
+            "Mape": 1.73922174386409,
             "color": "teal"
          },
          {
             "libraryName": "jsonifier",
             "resultType": "Write",
-            "resultSpeed": 134.97187243871545,
-            "Mape": 0.9788763877505402,
+            "resultSpeed": 115.13365050695022,
+            "Mape": 2.7432450106812167,
             "color": "steelblue"
          }
       ],
@@ -23,15 +23,15 @@
          {
             "libraryName": "jsonifier",
             "resultType": "Read",
-            "resultSpeed": 127.07944196112278,
-            "Mape": 0.021254943384559893,
+            "resultSpeed": 115.6670197916714,
+            "Mape": 0.9106987783087283,
             "color": "teal"
          },
          {
             "libraryName": "jsonifier",
             "resultType": "Write",
-            "resultSpeed": 98.27655769795926,
-            "Mape": 1.3096218857418824,
+            "resultSpeed": 106.97383668258067,
+            "Mape": 2.500874357926318,
             "color": "steelblue"
          }
       ],
@@ -42,15 +42,15 @@
          {
             "libraryName": "jsonifier",
             "resultType": "Read",
-            "resultSpeed": 80.390868998419,
-            "Mape": 4.027977029775501,
+            "resultSpeed": 50.86589949136414,
+            "Mape": 2.8087414459786655,
             "color": "teal"
          },
          {
             "libraryName": "jsonifier",
             "resultType": "Write",
-            "resultSpeed": 134.5732964359341,
-            "Mape": 1.348364689931839,
+            "resultSpeed": 106.04565009218632,
+            "Mape": 0.2736409065358791,
             "color": "steelblue"
          }
       ],
@@ -61,15 +61,15 @@
          {
             "libraryName": "jsonifier",
             "resultType": "Read",
-            "resultSpeed": 127.60627874037137,
-            "Mape": 0.31579641350210974,
+            "resultSpeed": 86.69311087483983,
+            "Mape": 0.5486910994764398,
             "color": "teal"
          },
          {
             "libraryName": "jsonifier",
             "resultType": "Write",
-            "resultSpeed": 107.0798237235151,
-            "Mape": 2.5182354984369573,
+            "resultSpeed": 94.78594790764359,
+            "Mape": 4.236770345550383,
             "color": "steelblue"
          }
       ],
@@ -80,15 +80,15 @@
          {
             "libraryName": "jsonifier",
             "resultType": "Read",
-            "resultSpeed": 47.717009533366785,
-            "Mape": 0.35894862788992243,
+            "resultSpeed": 32.354557588129076,
+            "Mape": 2.256158391527895,
             "color": "teal"
          },
          {
             "libraryName": "jsonifier",
             "resultType": "Write",
-            "resultSpeed": 250.2045944005743,
-            "Mape": 0.14357501794687724,
+            "resultSpeed": 209.01649175412297,
+            "Mape": 0.5247376311844079,
             "color": "steelblue"
          }
       ],
@@ -99,15 +99,15 @@
          {
             "libraryName": "jsonifier",
             "resultType": "Read",
-            "resultSpeed": 38.7649424645291,
-            "Mape": 0.4319775596072931,
+            "resultSpeed": 33.77640416626107,
+            "Mape": 0.8274116616373016,
             "color": "teal"
          },
          {
             "libraryName": "jsonifier",
             "resultType": "Write",
-            "resultSpeed": 190.75590984057175,
-            "Mape": 0.7421660252886202,
+            "resultSpeed": 166.53947684185266,
+            "Mape": 1.460920379839299,
             "color": "steelblue"
          }
       ],
@@ -118,15 +118,15 @@
          {
             "libraryName": "jsonifier",
             "resultType": "Read",
-            "resultSpeed": 95.81702548116398,
-            "Mape": 0.3512674333625016,
+            "resultSpeed": 74.43819902805032,
+            "Mape": 2.9402599368298747,
             "color": "teal"
          },
          {
             "libraryName": "jsonifier",
             "resultType": "Write",
-            "resultSpeed": 125.1368317839694,
-            "Mape": 2.050412129392618,
+            "resultSpeed": 93.55572001943607,
+            "Mape": 4.029516492670962,
             "color": "steelblue"
          }
       ],
@@ -137,15 +137,15 @@
          {
             "libraryName": "jsonifier",
             "resultType": "Read",
-            "resultSpeed": 112.25565646095929,
-            "Mape": 0.563191381481744,
+            "resultSpeed": 87.67061349976304,
+            "Mape": 2.9091080209877416,
             "color": "teal"
          },
          {
             "libraryName": "jsonifier",
             "resultType": "Write",
-            "resultSpeed": 51.75973295958241,
-            "Mape": 1.2142261951782605,
+            "resultSpeed": 32.48277362507576,
+            "Mape": 3.800499916281962,
             "color": "steelblue"
          }
       ],
@@ -156,15 +156,15 @@
          {
             "libraryName": "jsonifier",
             "resultType": "Read",
-            "resultSpeed": 37.214699222540744,
-            "Mape": 2.1538998848561244,
+            "resultSpeed": 32.52248124734977,
+            "Mape": 3.0909477363436695,
             "color": "teal"
          },
          {
             "libraryName": "jsonifier",
             "resultType": "Write",
-            "resultSpeed": 242.2214767352142,
-            "Mape": 0.9721563579703272,
+            "resultSpeed": 172.843874180112,
+            "Mape": 3.6001603509961537,
             "color": "steelblue"
          }
       ],
@@ -175,15 +175,15 @@
          {
             "libraryName": "jsonifier",
             "resultType": "Read",
-            "resultSpeed": 39.187911116929016,
-            "Mape": 3.3992207320061016,
+            "resultSpeed": 32.281252737921136,
+            "Mape": 4.737475544441221,
             "color": "teal"
          },
          {
             "libraryName": "jsonifier",
             "resultType": "Write",
-            "resultSpeed": 212.3918056048244,
-            "Mape": 0.7671159985810572,
+            "resultSpeed": 159.81115707994127,
+            "Mape": 1.123519686899018,
             "color": "steelblue"
          }
       ],
@@ -194,8 +194,8 @@
          {
             "libraryName": "jsonifier",
             "resultType": "Write",
-            "resultSpeed": 42.956979263385946,
-            "Mape": 0.16094088517486846,
+            "resultSpeed": 41.843231835996384,
+            "Mape": 3.365534434403241,
             "color": "steelblue"
          }
       ],
@@ -206,8 +206,8 @@
          {
             "libraryName": "jsonifier",
             "resultType": "Write",
-            "resultSpeed": 130.12759843757013,
-            "Mape": 0.4265411391263572,
+            "resultSpeed": 113.71144622749213,
+            "Mape": 2.011691601959773,
             "color": "steelblue"
          }
       ],
@@ -218,8 +218,8 @@
          {
             "libraryName": "jsonifier",
             "resultType": "Read",
-            "resultSpeed": 36.14595210946408,
-            "Mape": 0.5642779873110546,
+            "resultSpeed": 64.73791695030633,
+            "Mape": 0.1568463428661055,
             "color": "teal"
          }
       ],

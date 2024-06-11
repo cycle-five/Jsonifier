@@ -117,14 +117,6 @@ namespace jsonifier_internal {
 			return *currentIndex;
 		}
 
-		JSONIFIER_INLINE size_type getStringLength() const {
-			return static_cast<size_type>(*endIndex - *rootIndex);
-		}
-
-		JSONIFIER_INLINE size_type getCurrentStringIndex() const {
-			return static_cast<size_type>(*currentIndex - *rootIndex);
-		}
-
 		JSONIFIER_INLINE bool operator==(const json_structural_iterator&) const {
 			return *currentIndex == nullptr;
 		}
@@ -140,7 +132,7 @@ namespace jsonifier_internal {
 		}
 
 	  protected:
-		static constexpr value_type defaultValue{ '\0' };
+		static constexpr value_type defaultValue{ 0x00ll };
 		pointer_internal currentIndex{};
 		pointer_internal rootIndex{};
 		pointer_internal endIndex{};

@@ -15,7 +15,7 @@ alt="" width="400"/></p>
 
 | Library | Read (MB/s) | ReadLength (Bytes) | ReadTime (ns) | ReadMape (%) | Write (MB/s) | WriteLength (Bytes) | WriteTime (ns) | WriteMape (%) |
 | ------------------------------------------------- | ---------- | ----------- | ---------- | ----------- | ---------- | ---------- | ---------- | ---------- |
-| [jsonifier](https://github.com/realtimechris/jsonifier) | 80.3643 | 2898332 | 3.60649e+07 | 2.56 | 134.972 | 2898332 | 2.14736e+07 | 0.9789 |
+| [jsonifier](https://github.com/realtimechris/jsonifier) | 73.9695 | 3715169 | 5.02257e+07 | 1.739 | 115.134 | 3709848 | 3.22221e+07 | 2.743 |
 
 ### Json Test (Minified) Results [(View the data used in the following test)](https://github.com/RealTimeChris/Json-Performance/blob/main/Json/JsonData-Minified.json):
 
@@ -26,7 +26,7 @@ alt="" width="400"/></p>
 
 | Library | Read (MB/s) | ReadLength (Bytes) | ReadTime (ns) | ReadMape (%) | Write (MB/s) | WriteLength (Bytes) | WriteTime (ns) | WriteMape (%) |
 | ------------------------------------------------- | ---------- | ----------- | ---------- | ----------- | ---------- | ---------- | ---------- | ---------- |
-| [jsonifier](https://github.com/realtimechris/jsonifier) | 127.079 | 1973010 | 1.55258e+07 | 0.02125 | 98.2766 | 1973010 | 2.00761e+07 | 1.31 |
+| [jsonifier](https://github.com/realtimechris/jsonifier) | 115.667 | 2543992 | 2.19941e+07 | 0.9107 | 106.974 | 2538671 | 2.37317e+07 | 2.501 |
 
 ### ABC Test (Out of Sequence Performance - Prettified) [(View the data used in the following test)](https://github.com/RealTimeChris/Json-Performance/blob/main/Json/JsonData-Prettified.json):
 
@@ -42,7 +42,7 @@ In contrast, hash-based solutions offer a viable alternative by circumventing th
 
 | Library | Read (MB/s) | ReadLength (Bytes) | ReadTime (ns) | ReadMape (%) | Write (MB/s) | WriteLength (Bytes) | WriteTime (ns) | WriteMape (%) |
 | ------------------------------------------------- | ---------- | ----------- | ---------- | ----------- | ---------- | ---------- | ---------- | ---------- |
-| [jsonifier](https://github.com/realtimechris/jsonifier) | 80.3909 | 2898332 | 3.6053e+07 | 4.028 | 134.573 | 2898332 | 2.15372e+07 | 1.348 |
+| [jsonifier](https://github.com/realtimechris/jsonifier) | 50.8659 | 3715169 | 7.30385e+07 | 2.809 | 106.046 | 3709848 | 3.49835e+07 | 0.2736 |
 
 ### ABC Test (Out of Sequence Performance - Minified) [(View the data used in the following test)](https://github.com/RealTimeChris/Json-Performance/blob/main/Json/JsonData-Minified.json):
 
@@ -53,7 +53,7 @@ alt="" width="400"/></p>
 
 | Library | Read (MB/s) | ReadLength (Bytes) | ReadTime (ns) | ReadMape (%) | Write (MB/s) | WriteLength (Bytes) | WriteTime (ns) | WriteMape (%) |
 | ------------------------------------------------- | ---------- | ----------- | ---------- | ----------- | ---------- | ---------- | ---------- | ---------- |
-| [jsonifier](https://github.com/realtimechris/jsonifier) | 127.606 | 1973010 | 1.54617e+07 | 0.3158 | 107.08 | 1973010 | 1.84256e+07 | 2.518 |
+| [jsonifier](https://github.com/realtimechris/jsonifier) | 86.6931 | 2543992 | 2.93448e+07 | 0.5487 | 94.7859 | 2538671 | 2.67832e+07 | 4.237 |
 
 ### Discord Test (Prettified) Results [(View the data used in the following test)](https://github.com/RealTimeChris/Json-Performance/blob/main/Json/DiscordData-Prettified.json):
 
@@ -64,7 +64,7 @@ alt="" width="400"/></p>
 
 | Library | Read (MB/s) | ReadLength (Bytes) | ReadTime (ns) | ReadMape (%) | Write (MB/s) | WriteLength (Bytes) | WriteTime (ns) | WriteMape (%) |
 | ------------------------------------------------- | ---------- | ----------- | ---------- | ----------- | ---------- | ---------- | ---------- | ---------- |
-| [jsonifier](https://github.com/realtimechris/jsonifier) | 47.717 | 123630 | 2.5909e+06 | 0.3589 | 250.205 | 139414 | 557200 | 0.1436 |
+| [jsonifier](https://github.com/realtimechris/jsonifier) | 32.3546 | 123630 | 3.8211e+06 | 2.256 | 209.016 | 139414 | 667000 | 0.5247 |
 
 ### Discord Test (Minified) Results [(View the data used in the following test)](https://github.com/RealTimeChris/Json-Performance/blob/main/Json/DiscordData-Minified.json):
 
@@ -75,7 +75,7 @@ alt="" width="400"/></p>
 
 | Library | Read (MB/s) | ReadLength (Bytes) | ReadTime (ns) | ReadMape (%) | Write (MB/s) | WriteLength (Bytes) | WriteTime (ns) | WriteMape (%) |
 | ------------------------------------------------- | ---------- | ----------- | ---------- | ----------- | ---------- | ---------- | ---------- | ---------- |
-| [jsonifier](https://github.com/realtimechris/jsonifier) | 38.7649 | 69397 | 1.7902e+06 | 0.432 | 190.756 | 69397 | 363800 | 0.7422 |
+| [jsonifier](https://github.com/realtimechris/jsonifier) | 33.7764 | 69397 | 2.0546e+06 | 0.8274 | 166.539 | 69397 | 416700 | 1.461 |
 
 ### Canada Test (Prettified) Results [(View the data used in the following test)](https://github.com/RealTimeChris/Json-Performance/blob/main/Json/CanadaData-Prettified.json):
 
@@ -86,7 +86,7 @@ alt="" width="400"/></p>
 
 | Library | Read (MB/s) | ReadLength (Bytes) | ReadTime (ns) | ReadMape (%) | Write (MB/s) | WriteLength (Bytes) | WriteTime (ns) | WriteMape (%) |
 | ------------------------------------------------- | ---------- | ----------- | ---------- | ----------- | ---------- | ---------- | ---------- | ---------- |
-| [jsonifier](https://github.com/realtimechris/jsonifier) | 95.817 | 6885124 | 7.1857e+07 | 0.3513 | 125.137 | 6661897 | 5.32369e+07 | 2.05 |
+| [jsonifier](https://github.com/realtimechris/jsonifier) | 74.4382 | 6885124 | 9.24945e+07 | 2.94 | 93.5557 | 6661897 | 7.12078e+07 | 4.03 |
 
 ### Canada Test (Minified) Results [(View the data used in the following test)](https://github.com/RealTimeChris/Json-Performance/blob/main/Json/CanadaData-Minified.json):
 
@@ -97,7 +97,7 @@ alt="" width="400"/></p>
 
 | Library | Read (MB/s) | ReadLength (Bytes) | ReadTime (ns) | ReadMape (%) | Write (MB/s) | WriteLength (Bytes) | WriteTime (ns) | WriteMape (%) |
 | ------------------------------------------------- | ---------- | ----------- | ---------- | ----------- | ---------- | ---------- | ---------- | ---------- |
-| [jsonifier](https://github.com/realtimechris/jsonifier) | 112.256 | 2090234 | 1.86203e+07 | 0.5632 | 51.7597 | 2090234 | 4.03834e+07 | 1.214 |
+| [jsonifier](https://github.com/realtimechris/jsonifier) | 87.6706 | 2090234 | 2.38419e+07 | 2.909 | 32.4828 | 2090234 | 6.4349e+07 | 3.8 |
 
 ### Twitter Test (Prettified) Results [(View the data used in the following test)](https://github.com/RealTimeChris/Json-Performance/blob/main/Json/TwitterData-Prettified.json):
 
@@ -108,7 +108,7 @@ alt="" width="400"/></p>
 
 | Library | Read (MB/s) | ReadLength (Bytes) | ReadTime (ns) | ReadMape (%) | Write (MB/s) | WriteLength (Bytes) | WriteTime (ns) | WriteMape (%) |
 | ------------------------------------------------- | ---------- | ----------- | ---------- | ----------- | ---------- | ---------- | ---------- | ---------- |
-| [jsonifier](https://github.com/realtimechris/jsonifier) | 37.2147 | 667267 | 1.79302e+07 | 2.154 | 242.221 | 722038 | 2.9809e+06 | 0.9722 |
+| [jsonifier](https://github.com/realtimechris/jsonifier) | 32.5225 | 667267 | 2.05171e+07 | 3.091 | 172.844 | 722038 | 4.1774e+06 | 3.6 |
 
 ### Twitter Test (Minified) Results [(View the data used in the following test)](https://github.com/RealTimeChris/Json-Performance/blob/main/Json/TwitterData-Minified.json):
 
@@ -119,7 +119,7 @@ alt="" width="400"/></p>
 
 | Library | Read (MB/s) | ReadLength (Bytes) | ReadTime (ns) | ReadMape (%) | Write (MB/s) | WriteLength (Bytes) | WriteTime (ns) | WriteMape (%) |
 | ------------------------------------------------- | ---------- | ----------- | ---------- | ----------- | ---------- | ---------- | ---------- | ---------- |
-| [jsonifier](https://github.com/realtimechris/jsonifier) | 39.1879 | 478986 | 1.22228e+07 | 3.399 | 212.392 | 478986 | 2.2552e+06 | 0.7671 |
+| [jsonifier](https://github.com/realtimechris/jsonifier) | 32.2813 | 478986 | 1.48379e+07 | 4.737 | 159.811 | 478986 | 2.9972e+06 | 1.124 |
 
 ### Minify Test Results [(View the data used in the following test)](https://github.com/RealTimeChris/Json-Performance/blob/main/Json/DiscordData-Prettified.json):
 
@@ -130,7 +130,7 @@ alt="" width="400"/></p>
 
 | Library | Write (MB/s) | WriteLength (Bytes) | WriteTime (ns) | WriteMape (%) |
 | ------------------------------------------------- | ---------- | ----------- | ---------- | ----------- |
-| [jsonifier](https://github.com/realtimechris/jsonifier) | 42.957 | 69397 | 1.6155e+06 | 0.1609 |
+| [jsonifier](https://github.com/realtimechris/jsonifier) | 41.8432 | 69397 | 1.6585e+06 | 3.366 |
 
 ### Prettify Test Results [(View the data used in the following test)](https://github.com/RealTimeChris/Json-Performance/blob/main/Json/DiscordData-Minified.json):
 
@@ -141,7 +141,7 @@ alt="" width="400"/></p>
 
 | Library | Write (MB/s) | WriteLength (Bytes) | WriteTime (ns) | WriteMape (%) |
 | ------------------------------------------------- | ---------- | ----------- | ---------- | ----------- |
-| [jsonifier](https://github.com/realtimechris/jsonifier) | 130.128 | 2898332 | 2.2273e+07 | 0.4265 |
+| [jsonifier](https://github.com/realtimechris/jsonifier) | 113.711 | 3715169 | 3.26719e+07 | 2.012 |
 
 ### Validation Test Results [(View the data used in the following test)](https://github.com/RealTimeChris/Json-Performance/blob/main/Json/DiscordData-Prettified.json):
 
@@ -152,4 +152,4 @@ alt="" width="400"/></p>
 
 | Library | Read (MB/s) | ReadLength (Bytes) | ReadTime (ns) | ReadMape (%) |
 | ------------------------------------------------- | ---------- | ----------- | ---------- | ----------- |
-| [jsonifier](https://github.com/realtimechris/jsonifier) | 36.146 | 123630 | 3.4203e+06 | 0.5643 | 
+| [jsonifier](https://github.com/realtimechris/jsonifier) | 64.7379 | 123630 | 1.9097e+06 | 0.1568 | 

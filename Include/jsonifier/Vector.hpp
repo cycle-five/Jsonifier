@@ -360,7 +360,7 @@ namespace jsonifier {
 			swap(newVector);
 		}
 
-		static constexpr size_type maxSize() noexcept {
+		constexpr size_type maxSize() noexcept {
 			return (std::min)(static_cast<size_type>((std::numeric_limits<size_type>::max)()), allocator::maxSize());
 		}
 

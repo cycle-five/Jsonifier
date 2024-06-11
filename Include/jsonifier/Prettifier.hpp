@@ -78,7 +78,7 @@ namespace jsonifier_internal {
 			if (!iter) {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				getErrors().emplace_back(
-					constructError<sourceLocation, error_classes::Prettifying, prettify_errors::No_Input>(iter - iter, end - iter, static_cast<const char*>(iter)));
+					error::constructError<sourceLocation, error_classes::Prettifying, prettify_errors::No_Input>(iter - iter, end - iter, static_cast<const char*>(iter)));
 				return jsonifier::concepts::unwrap_t<string_type>{};
 			}
 			jsonifier::concepts::unwrap_t<string_type> newString{};
@@ -106,7 +106,7 @@ namespace jsonifier_internal {
 			if (!iter) {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				getErrors().emplace_back(
-					constructError<sourceLocation, error_classes::Prettifying, prettify_errors::No_Input>(iter - iter, end - iter, static_cast<const char*>(iter)));
+					error::constructError<sourceLocation, error_classes::Prettifying, prettify_errors::No_Input>(iter - iter, end - iter, static_cast<const char*>(iter)));
 				return false;
 			}
 			prettify_impl<derived_type>::template impl<optionsFinal>(iter, derivedRef.stringBuffer, derivedRef.index);

@@ -26,7 +26,7 @@
 
 #include <jsonifier/Allocator.hpp>
 #include <jsonifier/String.hpp>
-
+#include <jsonifier/Derailleur.hpp>
 #include <jsonifier/IToStr.hpp>
 #include <jsonifier/DToStr.hpp>
 #include <jsonifier/StrToD.hpp>
@@ -109,59 +109,56 @@ namespace jsonifier {
 
 namespace jsonifier_internal {
 
-	template<const auto& options, typename value_type, jsonifier_internal::simd_structural_iterator_t iterator_type>
+	template<const auto& options, typename value_type, jsonifier_internal::json_structural_iterator_t iterator_type>
 	JSONIFIER_INLINE void parseNumber(value_type&& value, iterator_type&& iter, iterator_type&& end) {
-		auto newPtr = iter.operator const char*&();
-		using V		= std::decay_t<value_type>;
+		using V = std::decay_t<value_type>;
 		if constexpr (jsonifier::concepts::integer_t<V>) {
 			static constexpr auto maximum = uint64_t((std::numeric_limits<V>::max)());
 			if constexpr (std::is_unsigned_v<V>) {
 				if constexpr (std::same_as<V, uint64_t>) {
-					if (*newPtr == '-') [[unlikely]] {
+					if (*iter == '-') [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
-							iter.getCurrentStringIndex(), iter.getStringLength(), iter.getRootPtr()));
+						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+							iter - options.rootIter, end - options.rootIter, options.rootIter));
 						skipToNextValue(iter, end);
 						return;
 					}
 
-					static_assert(sizeof(*newPtr) == sizeof(char));
-					auto s = parseInt(value, newPtr);
+					static_assert(sizeof(*iter) == sizeof(char));
+					auto s = parseInt<decltype(value)>(value, iter.operator const char*&());
+					++iter;
 					if (!s) [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
-							iter.getCurrentStringIndex(), iter.getStringLength(), iter.getRootPtr()));
+						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+							iter - options.rootIter, end - options.rootIter, options.rootIter));
 						skipToNextValue(iter, end);
 						return;
-					} else {
-						++iter;
 					}
 				} else {
 					uint64_t i{};
-					if (*newPtr == '-') [[unlikely]] {
+					if (*iter == '-') [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
-							iter.getCurrentStringIndex(), iter.getStringLength(), iter.getRootPtr()));
+						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+							iter - options.rootIter, end - options.rootIter, options.rootIter));
 						skipToNextValue(iter, end);
 						return;
 					}
 
-					static_assert(sizeof(*newPtr) == sizeof(char));
-					auto s = parseInt(i, newPtr);
+					static_assert(sizeof(*iter) == sizeof(char));
+					auto s = parseInt<uint64_t>(i, iter.operator const char*&());
+					++iter;
 					if (!s) [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
-							iter.getCurrentStringIndex(), iter.getStringLength(), iter.getRootPtr()));
+						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+							iter - options.rootIter, end - options.rootIter, options.rootIter));
 						skipToNextValue(iter, end);
 						return;
-					} else {
-						++iter;
 					}
 
 					if (i > maximum) [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
-							iter.getCurrentStringIndex(), iter.getStringLength(), iter.getRootPtr()));
+						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+							iter - options.rootIter, end - options.rootIter, options.rootIter));
 						skipToNextValue(iter, end);
 						return;
 					}
@@ -170,29 +167,29 @@ namespace jsonifier_internal {
 			} else {
 				uint64_t i{};
 				int32_t sign = 1;
+				auto newPtr	 = iter.operator const char*&();
 				if (*newPtr == '-') {
 					sign = -1;
 					++newPtr;
 				}
 
-				static_assert(sizeof(*newPtr) == sizeof(char));
-				auto s = parseInt(i, newPtr);
+				static_assert(sizeof(*iter) == sizeof(char));
+				auto s = parseInt<uint64_t>(i, newPtr);
+				++iter;
 				if (!s) [[unlikely]] {
 					static constexpr auto sourceLocation{ std::source_location::current() };
-					options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
-						iter.getCurrentStringIndex(), iter.getStringLength(), iter.getRootPtr()));
+					options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+						iter - options.rootIter, end - options.rootIter, options.rootIter));
 					skipToNextValue(iter, end);
 					return;
-				} else {
-					++iter;
 				}
 
 				if (sign == -1) {
 					static constexpr auto min_abs = uint64_t((std::numeric_limits<V>::max)()) + 1;
 					if (i > min_abs) [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
-							iter.getCurrentStringIndex(), iter.getStringLength(), iter.getRootPtr()));
+						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+							iter - options.rootIter, end - options.rootIter, options.rootIter));
 						skipToNextValue(iter, end);
 						return;
 					}
@@ -200,8 +197,8 @@ namespace jsonifier_internal {
 				} else {
 					if (i > maximum) [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
-							iter.getCurrentStringIndex(), iter.getStringLength(), iter.getRootPtr()));
+						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+							iter - options.rootIter, end - options.rootIter, options.rootIter));
 						skipToNextValue(iter, end);
 						return;
 					}
@@ -209,15 +206,14 @@ namespace jsonifier_internal {
 				}
 			}
 		} else {
-			auto s = parseFloat(value, newPtr);
+			auto s = parseFloat(value, iter.operator const char*&());
+			++iter;
 			if (!s) [[unlikely]] {
 				static constexpr auto sourceLocation{ std::source_location::current() };
-				options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
-					iter.getCurrentStringIndex(), iter.getStringLength(), iter.getRootPtr()));
+				options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+					iter - options.rootIter, end - options.rootIter, options.rootIter));
 				skipToNextValue(iter, end);
 				return;
-			} else {
-				++iter;
 			}
 		}
 	}
@@ -230,17 +226,17 @@ namespace jsonifier_internal {
 				if constexpr (std::same_as<V, uint64_t>) {
 					if (*iter == '-') [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
 							iter - options.rootIter, end - options.rootIter, options.rootIter));
 						skipToNextValue(iter, end);
 						return;
 					}
 
 					static_assert(sizeof(*iter) == sizeof(char));
-					auto s = parseInt(value, iter);
+					auto s = parseInt<decltype(value)>(value, iter);
 					if (!s) [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
 							iter - options.rootIter, end - options.rootIter, options.rootIter));
 						skipToNextValue(iter, end);
 						return;
@@ -249,17 +245,17 @@ namespace jsonifier_internal {
 					uint64_t i{};
 					if (*iter == '-') [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
 							iter - options.rootIter, end - options.rootIter, options.rootIter));
 						skipToNextValue(iter, end);
 						return;
 					}
 
 					static_assert(sizeof(*iter) == sizeof(char));
-					auto s = parseInt(i, iter);
+					auto s = parseInt<std::decay_t<decltype(i)>>(i, iter);
 					if (!s) [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
 							iter - options.rootIter, end - options.rootIter, options.rootIter));
 						skipToNextValue(iter, end);
 						return;
@@ -267,7 +263,7 @@ namespace jsonifier_internal {
 
 					if (i > maximum) [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
 							iter - options.rootIter, end - options.rootIter, options.rootIter));
 						skipToNextValue(iter, end);
 						return;
@@ -286,7 +282,7 @@ namespace jsonifier_internal {
 				auto s = parseInt(i, iter);
 				if (!s) [[unlikely]] {
 					static constexpr auto sourceLocation{ std::source_location::current() };
-					options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+					options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
 						iter - options.rootIter, end - options.rootIter, options.rootIter));
 					skipToNextValue(iter, end);
 					return;
@@ -296,7 +292,7 @@ namespace jsonifier_internal {
 					static constexpr auto min_abs = uint64_t((std::numeric_limits<V>::max)()) + 1;
 					if (i > min_abs) [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
 							iter - options.rootIter, end - options.rootIter, options.rootIter));
 						skipToNextValue(iter, end);
 						return;
@@ -305,7 +301,7 @@ namespace jsonifier_internal {
 				} else {
 					if (i > maximum) [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
 							iter - options.rootIter, end - options.rootIter, options.rootIter));
 						skipToNextValue(iter, end);
 						return;
@@ -317,7 +313,7 @@ namespace jsonifier_internal {
 			auto s = parseFloat(value, iter);
 			if (!s) [[unlikely]] {
 				static constexpr auto sourceLocation{ std::source_location::current() };
-				options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
+				options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
 					iter - options.rootIter, end - options.rootIter, options.rootIter));
 				skipToNextValue(iter, end);
 				return;

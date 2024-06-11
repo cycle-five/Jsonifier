@@ -29,172 +29,27 @@
 
 namespace jsonifier_internal {
 
-	JSONIFIER_INLINE uint64_t findFirstNonWhitespaceDistance(const char* previousPtr, const char* iter) {
-		uint64_t currentDistance   = 0;
-		const uint64_t maxDistance = static_cast<uint64_t>(iter - previousPtr);
-		if (maxDistance < 16) {
-			while (currentDistance < maxDistance && !whitespaceTable[static_cast<uint8_t>(previousPtr[currentDistance])]) {
-				++currentDistance;
-			}
-
-			return currentDistance;
-		}
-#if JSONIFIER_CHECK_FOR_AVX(JSONIFIER_AVX512)
-		{
-			using simd_type						 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 2>::type::type;
-			using integer_type					 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 2>::type::integer_type;
-			static constexpr uint64_t vectorSize = jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 2>::type::bytesProcessed;
-			integer_type whitespaceMask;
-			simd_type chunk;
-			while (currentDistance + vectorSize < maxDistance) {
-				chunk				= simd_internal::gatherValuesU<simd_type>(previousPtr + currentDistance);
-				auto whitespaceMask = simd_internal::opCmpEq(simd_internal::opShuffle(simd_internal::whitespaceTable<simd_type>, chunk), chunk);
-				if (whitespaceMask != 0) {
-					currentDistance += simd_internal::tzcnt(whitespaceMask);
-					return currentDistance;
-				}
-
-				currentDistance += vectorSize;
-			}
-		}
-#endif
-#if JSONIFIER_CHECK_FOR_AVX(JSONIFIER_AVX2)
-		{
-			using simd_type						 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 1>::type::type;
-			using integer_type					 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 1>::type::integer_type;
-			static constexpr uint64_t vectorSize = jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 1>::type::bytesProcessed;
-			integer_type whitespaceMask;
-			simd_type chunk;
-			while (currentDistance + vectorSize < maxDistance) {
-				chunk				= simd_internal::gatherValuesU<simd_type>(previousPtr + currentDistance);
-				auto whitespaceMask = simd_internal::opCmpEq(simd_internal::opShuffle(simd_internal::whitespaceTable<simd_type>, chunk), chunk);
-				if (whitespaceMask != 0) {
-					currentDistance += simd_internal::tzcnt(whitespaceMask);
-					return currentDistance;
-				}
-
-				currentDistance += vectorSize;
-			}
-		}
-#endif
-#if JSONIFIER_CHECK_FOR_AVX(JSONIFIER_AVX) || JSONIFIER_CHECK_FOR_INSTRUCTION(JSONIFIER_NEON)
-		{
-			using simd_type						 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 0>::type::type;
-			using integer_type					 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 0>::type::integer_type;
-			static constexpr uint64_t vectorSize = jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 0>::type::bytesProcessed;
-			integer_type whitespaceMask;
-			simd_type chunk;
-			while (currentDistance + vectorSize < maxDistance) {
-				chunk				= simd_internal::gatherValuesU<simd_type>(previousPtr + currentDistance);
-				auto whitespaceMask = simd_internal::opCmpEq(simd_internal::opShuffle(simd_internal::whitespaceTable<simd_type>, chunk), chunk);
-				if (whitespaceMask != 0) {
-					currentDistance += simd_internal::tzcnt(whitespaceMask);
-					return currentDistance;
-				}
-
-				currentDistance += vectorSize;
-			}
-		}
-#endif
-		while (currentDistance < maxDistance && !whitespaceTable[static_cast<uint8_t>(previousPtr[currentDistance])]) {
-			++currentDistance;
-		}
-
-		return currentDistance;
-	}
-
-	JSONIFIER_INLINE uint64_t findLastNonWhitespaceDistance(const char* previousPtr, const char* iter) {
-		uint64_t currentDistance = static_cast<uint64_t>(iter - previousPtr);
-		if (currentDistance < 16) {
-			while (currentDistance > 0 && whitespaceTable[static_cast<uint8_t>(previousPtr[currentDistance])]) {
-				--currentDistance;
-			};
-
-			return currentDistance - 1;
-		}
-#if JSONIFIER_CHECK_FOR_AVX(JSONIFIER_AVX512)
-		{
-			using simd_type						 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 2>::type::type;
-			using integer_type					 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 2>::type::integer_type;
-			static constexpr uint64_t vectorSize = jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 2>::type::bytesProcessed;
-			integer_type whitespaceMask;
-			simd_type chunk;
-			while (currentDistance >= vectorSize) {
-				chunk				= simd_internal::gatherValuesU<simd_type>((previousPtr - vectorSize) + currentDistance);
-				auto whitespaceMask = simd_internal::opCmpEq(simd_internal::opShuffle(simd_internal::whitespaceTable<simd_type>, chunk), chunk);
-				if (whitespaceMask != 0xFFFFFFFFFFFFFFFF) {
-					currentDistance -= simd_internal::lzcnt(static_cast<uint32_t>(~whitespaceMask));
-					return currentDistance - 1;
-				}
-				currentDistance -= vectorSize;
-			}
-		}
-#endif
-#if JSONIFIER_CHECK_FOR_AVX(JSONIFIER_AVX2)
-		{
-			using simd_type						 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 1>::type::type;
-			using integer_type					 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 1>::type::integer_type;
-			static constexpr uint64_t vectorSize = jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 1>::type::bytesProcessed;
-			integer_type whitespaceMask;
-			simd_type chunk;
-			while (currentDistance >= vectorSize) {
-				chunk				= simd_internal::gatherValuesU<simd_type>((previousPtr - vectorSize) + currentDistance);
-				auto whitespaceMask = simd_internal::opCmpEq(simd_internal::opShuffle(simd_internal::whitespaceTable<simd_type>, chunk), chunk);
-				if (whitespaceMask != 0xFFFFFFFF) {
-					currentDistance -= simd_internal::lzcnt(static_cast<uint32_t>(~whitespaceMask));
-					return currentDistance - 1;
-				}
-				currentDistance -= vectorSize;
-			}
-		}
-#endif
-#if JSONIFIER_CHECK_FOR_AVX(JSONIFIER_AVX) || JSONIFIER_CHECK_FOR_INSTRUCTION(JSONIFIER_NEON)
-		{
-			using simd_type						 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 0>::type::type;
-			using integer_type					 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 0>::type::integer_type;
-			static constexpr uint64_t vectorSize = jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 0>::type::bytesProcessed;
-			integer_type whitespaceMask;
-			simd_type chunk;
-			while (currentDistance >= vectorSize) {
-				chunk				= simd_internal::gatherValuesU<simd_type>((previousPtr - vectorSize) + currentDistance);
-				auto whitespaceMask = simd_internal::opCmpEq(simd_internal::opShuffle(simd_internal::whitespaceTable<simd_type>, chunk), chunk);
-				if (whitespaceMask != 0xFFFF) {
-					currentDistance -= simd_internal::lzcnt(static_cast<uint16_t>(~whitespaceMask));
-					return currentDistance - 1;
-				}
-				currentDistance -= vectorSize;
-			}
-		}
-#endif
-		while (currentDistance > 0 && whitespaceTable[static_cast<uint8_t>(previousPtr[currentDistance])]) {
-			--currentDistance;
-		};
-
-		return currentDistance - 1;
-	}
-
 	template<typename derived_type> struct minify_impl {
-		template<const minify_options_internal<derived_type>& options, typename iterator_type, jsonifier::concepts::buffer_like buffer_type,
-			jsonifier::concepts::uint64_type index_type>
-		JSONIFIER_INLINE static void impl(iterator_type&& iter, buffer_type&& out, index_type&& index) noexcept {
+		template<const minify_options_internal<derived_type>& options, jsonifier::concepts::string_t string_type, typename iterator_type>
+		JSONIFIER_INLINE static void impl(iterator_type&& iter, string_type& out, uint64_t& index) noexcept {
 			auto previousPtr = iter.operator->();
 			int64_t currentDistance{};
 
 			++iter;
+
 			while (iter) {
-				switch (asciiClassesMap[static_cast<uint8_t>(*previousPtr)]) {
+				switch (asciiClassesMap[*previousPtr]) {
 					[[likely]] case json_structural_type::String: {
-						if (*(previousPtr + 1) == '"') {
-							currentDistance = 1;
-						} else {
-							currentDistance = static_cast<int64_t>(findLastNonWhitespaceDistance(previousPtr, iter.operator->()));
+						currentDistance = iter.operator->() - previousPtr;
+						while (whitespaceTable[previousPtr[--currentDistance]]) {
 						}
+						auto newSize = static_cast<uint64_t>(currentDistance) + 1;
 						if (currentDistance > 0) [[likely]] {
-							writeCharactersUnchecked(out, previousPtr, currentDistance + 1, index);
+							writeCharactersUnchecked(out, previousPtr, newSize, index);
 						} else {
 							static constexpr auto sourceLocation{ std::source_location::current() };
-							options.minifierPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Minifying, minify_errors::Invalid_String_Length>(
-								iter.getCurrentStringIndex(), iter.getStringLength(), iter.getRootPtr()));
+							options.minifierPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Minifying, minify_errors::Invalid_String_Length>(
+								iter - iter.getRootPtr(), iter.getEndPtr() - iter.getRootPtr(), iter.getRootPtr()));
 							return;
 						}
 						break;
@@ -203,19 +58,21 @@ namespace jsonifier_internal {
 						writeCharacterUnchecked<','>(out, index);
 						break;
 					[[likely]] case json_structural_type::Number: {
-						currentDistance = static_cast<int64_t>(findFirstNonWhitespaceDistance(previousPtr, iter.operator->()));
+						currentDistance = 0;
+						while (!whitespaceTable[previousPtr[++currentDistance]] && ((previousPtr + currentDistance) < iter.operator->())) {
+						}
 						if (currentDistance > 0) [[likely]] {
-							writeCharactersUnchecked(out, previousPtr, static_cast<uint64_t>(currentDistance), index);
+							writeCharactersUnchecked(out, previousPtr, currentDistance, index);
 						} else {
 							static constexpr auto sourceLocation{ std::source_location::current() };
-							options.minifierPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Minifying, minify_errors::Invalid_Number_Value>(
-								iter.getCurrentStringIndex(), iter.getStringLength(), iter.getRootPtr()));
+							options.minifierPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Minifying, minify_errors::Invalid_Number_Value>(
+								iter - iter.getRootPtr(), iter.getEndPtr() - iter.getRootPtr(), iter.getRootPtr()));
 							return;
 						}
 						break;
 					}
 					[[unlikely]] case json_structural_type::Colon:
-						writeCharacterUnchecked<':'>(out, index);
+						writeCharacterUnchecked<0x3A>(out, index);
 						break;
 					[[unlikely]] case json_structural_type::Array_Start:
 						writeCharacterUnchecked<'['>(out, index);
@@ -248,8 +105,8 @@ namespace jsonifier_internal {
 						[[fallthrough]];
 					[[unlikely]] default: {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.minifierPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Minifying, minify_errors::Incorrect_Structural_Index>(
-							iter.getCurrentStringIndex(), iter.getStringLength(), iter.getRootPtr()));
+						options.minifierPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Minifying, minify_errors::Incorrect_Structural_Index>(
+							iter - iter.getRootPtr(), iter.getEndPtr() - iter.getRootPtr(), iter.getRootPtr()));
 						return;
 					}
 				}
@@ -259,5 +116,6 @@ namespace jsonifier_internal {
 			writeCharacterUnchecked(*previousPtr, out, index);
 		}
 	};
+
 
 }// namespace jsonifier_internal

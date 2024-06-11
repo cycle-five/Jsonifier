@@ -310,16 +310,3 @@ namespace jsonifier {
 	}
 
 }// namespace jsonifier
-
-namespace jsonifier_internal {
-
-	template<typename value_type> struct hash<jsonifier::string_view_base<value_type>> {
-		constexpr uint64_t operator()(const jsonifier::string_view_base<value_type>& value, uint32_t seed) const {
-			if (std::is_constant_evaluated()) {
-				return fnv1aHashCt(value, seed);
-			} else {
-				return fnv1aHashRt(value.data(), value.size(), seed);
-			}
-		}
-	};
-}

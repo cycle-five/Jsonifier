@@ -131,7 +131,7 @@ namespace jsonifier_internal {
 		static constexpr uint32_t codePointLessThan01{ 0xd800 };
 		static constexpr uint32_t codePointLessThan02{ 0xdc00 };
 		static constexpr char_type01 quotesValue{ static_cast<char_type01>('\\' << 8) };
-		static constexpr char_type01 uValue{ static_cast<char_type01>('u') };
+		static constexpr char_type01 uValue{ static_cast<char_type01>(0x75u) };
 		uint32_t codePoint = hexToU32NoCheck(srcPtr + 2);
 		srcPtr += 6;
 		if (codePoint >= codePointLessThan01 && codePoint < codePointLessThan02) {
@@ -221,7 +221,7 @@ namespace jsonifier_internal {
 	}
 
 	template<typename iterator_type01> JSONIFIER_INLINE void skipShortStringImpl(iterator_type01& string1, uint64_t& lengthNew) {
-		static constexpr char quotesValue{ static_cast<char>('"') };
+		static constexpr uint8_t quotesValue{ static_cast<uint8_t>('"') };
 		while (static_cast<int64_t>(lengthNew) > 0) {
 			if (*string1 == quotesValue || *string1 == '\\') {
 				auto escapeChar = *string1;
@@ -243,7 +243,7 @@ namespace jsonifier_internal {
 		using char_type01 =
 			typename std::conditional_t<std::is_pointer_v<iterator_type01>, std::remove_pointer_t<iterator_type01>, typename std::iterator_traits<iterator_type01>::value_type>;
 		std::remove_const_t<char_type01> escapeChar;
-		static constexpr char quotesValue{ static_cast<char>('"') };
+		static constexpr uint8_t quotesValue{ static_cast<uint8_t>('"') };
 #if JSONIFIER_CHECK_FOR_AVX(JSONIFIER_AVX512)
 		{
 			using integer_type						 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_integer_list, 3>::type::integer_type;
@@ -384,7 +384,7 @@ namespace jsonifier_internal {
 						}
 						continue;
 					}
-					escapeChar = escapeMap<char>[escapeChar];
+					escapeChar = escapeMap<uint8_t>[escapeChar];
 					if (escapeChar == 0) {
 						return string2;
 					}
@@ -426,7 +426,7 @@ namespace jsonifier_internal {
 						return string2 + nextBackslashOrQuote;
 					} else if (escapeChar == '\\') {
 						escapeChar = string1[nextBackslashOrQuote + 1];
-						if (escapeChar == 'u') {
+						if (escapeChar == 0x75u) {
 							lengthNew -= nextBackslashOrQuote;
 							string1 += nextBackslashOrQuote;
 							string2 += nextBackslashOrQuote;
@@ -435,7 +435,7 @@ namespace jsonifier_internal {
 							}
 							continue;
 						}
-						escapeChar = escapeMap<char>[escapeChar];
+						escapeChar = escapeMap<uint8_t>[escapeChar];
 						if (escapeChar == 0u) {
 							return static_cast<iterator_type02>(nullptr);
 						}
@@ -473,7 +473,7 @@ namespace jsonifier_internal {
 						return string2 + nextBackslashOrQuote;
 					} else if (escapeChar == '\\') {
 						escapeChar = string1[nextBackslashOrQuote + 1];
-						if (escapeChar == 'u') {
+						if (escapeChar == 0x75u) {
 							lengthNew -= nextBackslashOrQuote;
 							string1 += nextBackslashOrQuote;
 							string2 += nextBackslashOrQuote;
@@ -482,7 +482,7 @@ namespace jsonifier_internal {
 							}
 							continue;
 						}
-						escapeChar = escapeMap<char>[escapeChar];
+						escapeChar = escapeMap<uint8_t>[escapeChar];
 						if (escapeChar == 0u) {
 							return string2;
 						}
@@ -520,7 +520,7 @@ namespace jsonifier_internal {
 						return string2 + nextBackslashOrQuote;
 					} else if (escapeChar == '\\') {
 						escapeChar = string1[nextBackslashOrQuote + 1];
-						if (escapeChar == 'u') {
+						if (escapeChar == 0x75u) {
 							lengthNew -= nextBackslashOrQuote;
 							string1 += nextBackslashOrQuote;
 							string2 += nextBackslashOrQuote;
@@ -529,7 +529,7 @@ namespace jsonifier_internal {
 							}
 							continue;
 						}
-						escapeChar = escapeMap<char>[escapeChar];
+						escapeChar = escapeMap<uint8_t>[escapeChar];
 						if (escapeChar == 0u) {
 							return string2;
 						}
@@ -566,7 +566,7 @@ namespace jsonifier_internal {
 						return string2 + nextBackslashOrQuote;
 					} else if (escapeChar == '\\') {
 						escapeChar = string1[nextBackslashOrQuote + 1];
-						if (escapeChar == 'u') {
+						if (escapeChar == 0x75u) {
 							lengthNew -= nextBackslashOrQuote;
 							string1 += nextBackslashOrQuote;
 							string2 += nextBackslashOrQuote;
@@ -575,7 +575,7 @@ namespace jsonifier_internal {
 							}
 							continue;
 						}
-						escapeChar = escapeMap<char>[escapeChar];
+						escapeChar = escapeMap<uint8_t>[escapeChar];
 						if (escapeChar == 0u) {
 							return string2;
 						}
@@ -602,7 +602,6 @@ namespace jsonifier_internal {
 		std::array<uint16_t, 256> returnValues{};
 		returnValues['\"'] = 0x225Cu;
 		returnValues['\\'] = 0x5C5Cu;
-		returnValues['\/'] = 0x2F5Cu;
 		returnValues['\b'] = 0x625Cu;
 		returnValues['\f'] = 0x665Cu;
 		returnValues['\n'] = 0x6E5Cu;
@@ -774,7 +773,7 @@ namespace jsonifier_internal {
 		}
 	}
 
-	template<simd_structural_iterator_t iterator_type, jsonifier::concepts::bool_t bool_type> JSONIFIER_INLINE bool parseBool(bool_type& value, iterator_type&& iter) {
+	template<json_structural_iterator_t iterator_type, jsonifier::concepts::bool_t bool_type> JSONIFIER_INLINE bool parseBool(bool_type& value, iterator_type&& iter) {
 		if (compare<4>("true", iter.operator const char*&())) {
 			value = true;
 			++iter;
@@ -797,7 +796,7 @@ namespace jsonifier_internal {
 		}
 	}
 
-	template<simd_structural_iterator_t iterator_type> JSONIFIER_INLINE bool parseNull(iterator_type&& iter) {
+	template<json_structural_iterator_t iterator_type> JSONIFIER_INLINE bool parseNull(iterator_type&& iter) {
 		if (compare<4>("null", iter.operator const char*&())) {
 			++iter;
 			return true;
@@ -806,35 +805,34 @@ namespace jsonifier_internal {
 		}
 	}
 
-	template<const auto& options, typename value_type, simd_structural_iterator_t iterator_type>
+	template<const auto& options, typename value_type, json_structural_iterator_t iterator_type>
 	JSONIFIER_INLINE void parseString(value_type&& value, iterator_type&& iter, iterator_type&& end) {
 		auto newPtr = iter.operator->();
-		if (*iter == '"') [[likely]] {
+		if (*newPtr == 0x22u) [[likely]] {
 			++iter;
 		} else {
 			static constexpr auto sourceLocation{ std::source_location::current() };
-			options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - options.rootIter,
+			options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - options.rootIter,
 				end - options.rootIter, options.rootIter));
 			skipToNextValue(iter, end);
 			return;
 		}
-		static thread_local jsonifier::string_base<uint8_t, 1024 * 1024> newString{};
 		auto newSize = static_cast<uint64_t>(iter.operator->() - newPtr);
 		if (static_cast<int64_t>(newSize) > 0) {
-			if (newSize > newString.size()) [[unlikely]] {
-				newString.resize(newSize);
+			if (newSize > options.parserPtr->getStringBuffer().size()) [[unlikely]] {
+				options.parserPtr->getStringBuffer().resize(newSize);
 			}
 			++newPtr;
-			auto newestPtr = parseStringImpl(newPtr, newString.data(), newSize);
+			auto newestPtr = parseStringImpl(newPtr, options.parserPtr->getStringBuffer().data(), newSize);
 			if (newestPtr) [[likely]] {
-				newSize = static_cast<uint64_t>(newestPtr - newString.data());
-				if (value.size() != newSize || !compare(value.data(), newString.data(), newSize)) {
+				newSize = static_cast<uint64_t>(newestPtr - options.parserPtr->getStringBuffer().data());
+				if (value.size() != newSize || !compare(value.data(), options.parserPtr->getStringBuffer().data(), newSize)) {
 					value.resize(newSize);
-					std::memcpy(value.data(), newString.data(), newSize);
+					std::memcpy(value.data(), options.parserPtr->getStringBuffer().data(), newSize);
 				}
 			} else {
 				static constexpr auto sourceLocation{ std::source_location::current() };
-				options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_String_Characters>(
+				options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_String_Characters>(
 					iter - options.rootIter, end - options.rootIter, options.rootIter));
 				skipToNextValue(iter, end);
 				return;
@@ -843,35 +841,38 @@ namespace jsonifier_internal {
 	}
 
 	template<const auto& options, typename value_type, typename iterator_type> JSONIFIER_INLINE void parseString(value_type&& value, iterator_type&& iter, iterator_type&& end) {
-		if (*iter == '"') [[unlikely]] {
+		if (*iter == '"') [[likely]] {
 			++iter;
 		} else {
 			static constexpr auto sourceLocation{ std::source_location::current() };
-			options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - options.rootIter,
+			options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - options.rootIter,
 				end - options.rootIter, options.rootIter));
 			return;
 		}
-		static thread_local jsonifier::string_base<char, 1024 * 1024> newString{};
+
 		auto newSize = end - iter;
-		if (newSize > 0) {
-			if (newSize > newString.size()) [[unlikely]] {
-				newString.resize(static_cast<uint64_t>(newSize));
+
+		if (newSize > 0) [[likely]] {
+			if (newSize > options.parserPtr->getStringBuffer().capacity()) [[unlikely]] {
+				options.parserPtr->getStringBuffer().resize(newSize);
 			}
-			auto newestPtr = parseStringImpl(iter, newString.data(), newSize);
+
+			auto newestPtr = parseStringImpl(iter, options.parserPtr->getStringBuffer().data(), newSize);
 			if (newestPtr) [[likely]] {
 				++iter;
-				newSize = static_cast<uint64_t>(newestPtr - newString.data());
-				if (value.size() != newSize || !compare(value.data(), newString.data(), newSize)) {
+				newSize = static_cast<uint64_t>(newestPtr - options.parserPtr->getStringBuffer().data());
+				if (value.size() != newSize || !compare(value.data(), options.parserPtr->getStringBuffer().data(), newSize)) [[likely]] {
 					value.resize(newSize);
-					std::memcpy(value.data(), newString.data(), newSize);
+					std::memcpy(value.data(), options.parserPtr->getStringBuffer().data(), newSize);
 				}
 			} else {
-				static constexpr auto sourceLocation{ std::source_location::current() };
-				options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_String_Characters>(
+				static constexpr auto sourceLocation = std::source_location::current();
+				options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_String_Characters>(
 					iter - options.rootIter, end - options.rootIter, options.rootIter));
 				return;
 			}
 		}
 	}
+
 
 }// namespace jsonifier_internal

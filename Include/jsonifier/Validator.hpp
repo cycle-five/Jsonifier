@@ -68,12 +68,12 @@ namespace jsonifier_internal {
 			derivedRef.index = 0;
 			derivedRef.section.reset(in.data(), in.size());
 			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end() };
-			json_structural_iterator end{ derivedRef.section.end(), derivedRef.section.end() };
 			static constexpr validate_options_internal<derived_type> options{};
 			options.validatorPtr = this;
 			if (!iter) {
 				static constexpr auto sourceLocation{ std::source_location::current() };
-				getErrors().emplace_back(constructError<sourceLocation, error_classes::Validating, validate_errors::No_Input>(end - iter, end - iter, iter.getRootPtr()));
+				getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Validating, validate_errors::No_Input>(iter - iter.getRootPtr(),
+					iter.getEndPtr() - iter.getRootPtr(), iter.getRootPtr()));
 				return false;
 			}
 			auto result = impl<options>(iter, derivedRef.index);

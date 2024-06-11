@@ -42,31 +42,51 @@ namespace jsonifier_internal {
 		return a <= b;
 	}
 
-	template<jsonifier::concepts::integer_t value_type_new, typename iterator_type> JSONIFIER_INLINE bool parseInt(value_type_new& value, iterator_type&& iter) {
-		using value_type				 = jsonifier::concepts::unwrap_t<value_type_new>;
-		static constexpr auto isVolatile = std::is_volatile_v<std::remove_reference_t<decltype(value)>>;
-		uint64_t sig{};
-		uint64_t numTmp{};
+	template<jsonifier::concepts::integer_t value_type_new> JSONIFIER_INLINE bool parseInt(value_type_new& value, auto& iter) {
+		using value_type		  = jsonifier::concepts::unwrap_t<value_type_new>;
+		constexpr auto isVolatile = std::is_volatile_v<std::remove_reference_t<decltype(value)>>;
+		using char_type			  = decltype(iter);
+		uint64_t sig			  = uint64_t(numberSubTable[static_cast<uint64_t>(*iter)]);
+		uint64_t numTmp;
 
 		if (sig > 9) [[unlikely]] {
 			return false;
 		}
 
-		while (numberTable[*iter]) {
-			numTmp = numberSubTable[static_cast<uint8_t>(*iter)];
-			sig	   = sig * 10 + numTmp;
-			++iter;
-		}
+		constexpr auto zero = uint8_t('0');
+#define expr_intg(i) \
+	if (numTmp = numberSubTable[iter[i]]; numTmp <= 9) [[likely]] \
+		sig = numTmp + sig * 10; \
+	else { \
+		if constexpr (i > 1) { \
+			if (*iter == zero) \
+				return false; \
+		} \
+		goto digi_sepr_##i; \
+	}
+		repeat_in_1_18(expr_intg);
+#undef expr_intg
 
+		if (*iter == zero)
+			return false;
+
+		iter += 19;
 		if (!digiIsDigitOrFp(*iter)) {
-			if (sig > std::numeric_limits<value_type>::max()) {
-				return false;
-			}
 			value = static_cast<value_type>(sig);
 			return true;
 		}
 
-		return false;
+#define expr_sepr(i) \
+	digi_sepr_##i : if (!digiIsFp(uint8_t(iter[i]))) [[likely]] { \
+		iter += i; \
+		value = sig; \
+		return true; \
+	} \
+	iter += i; \
+	return false;
+		repeat_in_1_18(expr_sepr)
+#undef expr_sepr
+			return false;
 	}
 
 	template<typename value_type, typename char_type> constexpr bool stoui64(value_type& res, const char_type* c) noexcept {
@@ -81,17 +101,17 @@ namespace jsonifier_internal {
 		auto nextDigit	  = digits.begin();
 		auto consumeDigit = [&c, &nextDigit, &digits]() {
 			if (nextDigit < digits.cend()) [[likely]] {
-				*nextDigit = static_cast<uint8_t>(*c - '0');
+				*nextDigit = static_cast<uint8_t>(*c - 0x30u);
 				++nextDigit;
 			}
 			++c;
 		};
 
-		if (*c == '0') {
+		if (*c == 0x30u) {
 			++c;
 			++nextDigit;
 
-			if (*c == '0') [[unlikely]] {
+			if (*c == 0x30u) [[unlikely]] {
 				return false;
 			}
 		}
@@ -99,7 +119,7 @@ namespace jsonifier_internal {
 		while (digitTableBool[static_cast<uint64_t>(*c)]) {
 			consumeDigit();
 		}
-		auto size = std::distance(digits.begin(), nextDigit);
+		auto n = std::distance(digits.begin(), nextDigit);
 
 		if (*c == '.') {
 			++c;
@@ -118,23 +138,23 @@ namespace jsonifier_internal {
 			}
 			uint8_t exp = 0;
 			while (digitTableBool[static_cast<uint64_t>(*c)] && exp < 128) {
-				exp = static_cast<uint8_t>(10 * exp + (*c - '0'));
+				exp = static_cast<uint8_t>(10 * exp + (*c - 0x30u));
 				++c;
 			}
-			size += negative ? -exp : exp;
+			n += negative ? -exp : exp;
 		}
 
 		res = 0;
-		if (size < 0) [[unlikely]] {
+		if (n < 0) [[unlikely]] {
 			return true;
 		}
 
 		if constexpr (std::is_same_v<value_type, uint64_t>) {
-			if (size > 20) [[unlikely]] {
+			if (n > 20) [[unlikely]] {
 				return false;
 			}
 
-			if (size == 20) [[unlikely]] {
+			if (n == 20) [[unlikely]] {
 				for (auto k = 0; k < 19; ++k) {
 					res = static_cast<value_type>(10) * res + static_cast<value_type>(digits[static_cast<uint64_t>(k)]);
 				}
@@ -150,15 +170,15 @@ namespace jsonifier_internal {
 					return false;
 				}
 			} else [[likely]] {
-				for (auto k = 0; k < size; ++k) {
+				for (auto k = 0; k < n; ++k) {
 					res = static_cast<value_type>(10) * res + static_cast<value_type>(digits[static_cast<uint64_t>(k)]);
 				}
 			}
 		} else {
-			if (size >= N) [[unlikely]] {
+			if (n >= N) [[unlikely]] {
 				return false;
 			} else [[likely]] {
-				for (auto k = 0; k < size; ++k) {
+				for (auto k = 0; k < n; ++k) {
 					res = static_cast<value_type>(10) * res + static_cast<value_type>(digits[static_cast<uint64_t>(k)]);
 				}
 			}

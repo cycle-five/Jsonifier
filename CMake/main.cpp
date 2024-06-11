@@ -24,13 +24,7 @@ enum instruction_set {
 	AVX512F = 0x80,
 };
 
-#if defined(__PPC64__)
-
-static inline uint32_t detectSupportedArchitectures() {
-	return instruction_set::ALTIVEC;
-}
-
-#elif defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC)
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC)
 
 static inline uint32_t detectSupportedArchitectures() {
 	return instruction_set::NEON;
@@ -139,18 +133,6 @@ static inline uint32_t detectSupportedArchitectures() {
 	}
 
 	return hostIsa;
-}
-
-#elif defined(__loongarch_sx) && !defined(__loongarch_asx)
-
-static inline uint32_t detectSupportedArchitectures() {
-	return instruction_set::LSX;
-}
-
-#elif defined(__loongarch_asx)
-
-static inline uint32_t detectSupportedArchitectures() {
-	return instruction_set::LASX;
 }
 
 #else

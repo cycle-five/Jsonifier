@@ -92,7 +92,7 @@ namespace jsonifier_internal {
 		skipStringImpl(iter, newLength);
 	}
 
-	template<simd_structural_iterator_t iterator_type> JSONIFIER_INLINE void skipToEndOfValue(iterator_type&& iter, iterator_type&& end) {
+	template<json_structural_iterator_t iterator_type> JSONIFIER_INLINE void skipToEndOfValue(iterator_type&& iter, iterator_type&& end) {
 		uint64_t currentDepth{ 1 };
 		while (iter != end && currentDepth > 0) {
 			switch (*iter) {
@@ -116,9 +116,9 @@ namespace jsonifier_internal {
 		}
 	}
 
-	template<simd_structural_iterator_t iterator_type> JSONIFIER_INLINE void skipToNextValue(iterator_type&& iter, iterator_type&& end);
+	template<json_structural_iterator_t iterator_type> JSONIFIER_INLINE void skipToNextValue(iterator_type&& iter, iterator_type&& end);
 
-	template<simd_structural_iterator_t iterator_type> JSONIFIER_INLINE void skipObject(iterator_type&& iter, iterator_type&& end) noexcept {
+	template<json_structural_iterator_t iterator_type> JSONIFIER_INLINE void skipObject(iterator_type&& iter, iterator_type&& end) noexcept {
 		++iter;
 		if (*iter == '}') {
 			++iter;
@@ -140,7 +140,7 @@ namespace jsonifier_internal {
 		}
 	}
 
-	template<simd_structural_iterator_t iterator_type> JSONIFIER_INLINE void skipArray(iterator_type&& iter, iterator_type&& end) noexcept {
+	template<json_structural_iterator_t iterator_type> JSONIFIER_INLINE void skipArray(iterator_type&& iter, iterator_type&& end) noexcept {
 		++iter;
 		if (*iter == ']') {
 			++iter;
@@ -157,7 +157,7 @@ namespace jsonifier_internal {
 		}
 	}
 
-	template<simd_structural_iterator_t iterator_type> JSONIFIER_INLINE void skipToNextValue(iterator_type&& iter, iterator_type&& end) {
+	template<json_structural_iterator_t iterator_type> JSONIFIER_INLINE void skipToNextValue(iterator_type&& iter, iterator_type&& end) {
 		switch (*iter) {
 			case '{': {
 				skipObject(iter, end);
@@ -246,10 +246,10 @@ namespace jsonifier_internal {
 				skipNumber(iter, end);
 				break;
 			}
-				[[likely]] default : {
-					++iter;
-					break;
-				}
+			[[likely]] default: {
+				++iter;
+				break;
+			}
 		}
 	}
 
@@ -387,10 +387,10 @@ namespace jsonifier_internal {
 					skipNumber(iter, end);
 					break;
 				}
-					[[likely]] default : {
-						++iter;
-						break;
-					}
+				[[likely]] default: {
+					++iter;
+					break;
+				}
 			}
 		}
 		return currentCount;
@@ -429,7 +429,7 @@ namespace jsonifier_internal {
 	template<const auto& options, typename value_type, typename iterator_type> JSONIFIER_INLINE jsonifier::string_view parseKey(iterator_type&& iter, iterator_type&& end) {
 		if (*iter != '"') [[unlikely]] {
 			static constexpr auto sourceLocation{ std::source_location::current() };
-			options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - options.rootIter,
+			options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - options.rootIter,
 				end - options.rootIter, options.rootIter));
 			return {};
 		} else {
@@ -437,6 +437,12 @@ namespace jsonifier_internal {
 		}
 
 		static constexpr auto N{ std::tuple_size_v<jsonifier::concepts::core_t<value_type>> };
+
+		if constexpr (N == 1) {
+			static constexpr jsonifier::string_view key{ keyName<0, value_type> };
+			iter += key.size() + 1;
+			return key;
+		}
 
 		const auto start{ iter };
 
@@ -473,20 +479,25 @@ namespace jsonifier_internal {
 		}
 	}
 
-	template<const auto& options, typename value_type, simd_structural_iterator_t iterator_type>
+	template<const auto& options, typename value_type, json_structural_iterator_t iterator_type>
 	JSONIFIER_INLINE jsonifier::string_view parseKey(iterator_type&& iter, iterator_type&& end) {
 		auto start{ iter.operator->() };
 
 		if (*iter != '"') [[unlikely]] {
 			static constexpr auto sourceLocation{ std::source_location::current() };
-			options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(
-				iter.getCurrentStringIndex(), iter.getStringLength(), options.rootIter));
+			options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - iter.getRootPtr(),
+				iter.getEndPtr() - iter.getRootPtr(), options.rootIter));
 			return {};
 		} else {
 			++iter;
 		}
 
 		static constexpr auto N{ std::tuple_size_v<jsonifier::concepts::core_t<value_type>> };
+
+		if constexpr (N == 1) {
+			static constexpr jsonifier::string_view key{ keyName<0, value_type> };
+			return key;
+		}
 
 		return jsonifier::string_view{ start + 1, static_cast<uint64_t>(iter.operator->() - (start + 2)) };
 	}

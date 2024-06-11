@@ -44,11 +44,11 @@ namespace simd_internal {
 	}
 
 	template<simd_int_128_type simd_int_type_new> JSONIFIER_INLINE static simd_int_type_new gatherValues(const void* str) {
-		return vld1q_u8(static_cast<const unsigned char*>(str));
+		return vld1q_u8(static_cast<const uint8_t*>(str));
 	}
 
 	template<simd_int_128_type simd_int_type_new> JSONIFIER_INLINE static simd_int_type_new gatherValuesU(const void* str) {
-		return vld1q_u8(static_cast<const unsigned char*>(str));
+		return vld1q_u8(static_cast<const uint8_t*>(str));
 	}
 
 	template<simd_int_128_type simd_int_type_new, typename char_type> JSONIFIER_INLINE static simd_int_type_new gatherValue(char_type str) {

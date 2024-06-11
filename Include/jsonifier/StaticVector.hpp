@@ -140,7 +140,7 @@ namespace jsonifier_internal {
 
 		constexpr void print() const {
 			for (size_type x = 0; x < rows; ++x) {
-				std::cout << dataVal[x] << ' ';
+				std::cout << dataVal[x] << 0x20;
 				std::cout << '\n';
 			}
 		}
