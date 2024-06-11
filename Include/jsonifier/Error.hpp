@@ -138,12 +138,6 @@ namespace jsonifier_internal {
 			}
 		}
 
-		template<const std::source_location& sourceLocation, error_classes errorClassNew, auto typeNew, typename value_type>
-		JSONIFIER_INLINE static error constructError(int64_t errorIndexNew, int64_t stringLengthNew, value_type stringViewNew) {
-			error newError{ sourceLocation, errorClassNew, errorIndexNew, stringLengthNew, reinterpret_cast<string_view_ptr>(stringViewNew), static_cast<uint64_t>(typeNew) };
-			return newError;
-		}
-
 		JSONIFIER_INLINE operator bool() {
 			return errorType != 0;
 		}
@@ -157,39 +151,37 @@ namespace jsonifier_internal {
 				return;
 			}
 
-			using V			 = std::remove_const_t<std::decay_t<decltype(errorString[0])>>;
-			auto start		 = std::begin(errorString) + static_cast<int64_t>(errorIndex);
-			auto rstart		 = std::rbegin(errorString) + static_cast<int64_t>(errorString.size()) - static_cast<int64_t>(errorIndex) - 1ll;
-			line			 = size_t(std::count(std::begin(errorString), start, '\n') + 1);
-			auto prevNewLine = std::find(std::min(rstart + 1, std::rend(errorString)), std::rend(errorString), '\n');
-			localIndex		 = start.operator->() - prevNewLine.operator->();
-			auto column		 = std::distance(rstart, prevNewLine);
-			auto nextNewLine = std::find(std::min(start + 1, std::end(errorString)), std::end(errorString), '\n');
+			using V = std::decay_t<decltype(errorString[0])>;
 
-			auto offset		  = static_cast<int64_t>(errorIndex);
-			auto contextBegin = std::begin(errorString) + static_cast<int64_t>(offset);
-			auto contextEnd	  = nextNewLine;
-			if (contextEnd - contextBegin > 0) {
-				int64_t frontTruncation = 0;
-				int64_t rearTruncation	= 0;
+			const auto start				 = std::begin(errorString) + errorIndex;
+			line							 = size_t(std::count(std::begin(errorString), start, static_cast<V>('\n')) + 1);
+			const auto rstart				 = std::rbegin(errorString) + errorString.size() - errorIndex - 1;
+			const auto prev_new_line		 = std::find((std::min)(rstart, std::rend(errorString)), std::rend(errorString), static_cast<V>('\n'));
+			localIndex						 = size_t(std::distance(rstart, prev_new_line));
+			const auto next_new_line		 = std::find((std::min)(start + 1, std::end(errorString)), std::end(errorString), static_cast<V>('\n'));
 
-				if (std::distance(contextBegin, contextEnd) > 64) {
-					if (column <= 32) {
-						rearTruncation = 64;
-						contextEnd	   = contextBegin + rearTruncation;
+			const auto offset  = (prev_new_line == std::rend(errorString) ? 0 : errorIndex - localIndex + 1);
+			auto context_begin = std::begin(errorString) + offset;
+			auto context_end   = next_new_line;
+
+				size_t front_truncation = 0;
+				size_t rear_truncation	= 0;
+
+				if (std::distance(context_begin, context_end) > 64) {
+					if (localIndex <= 32) {
+						rear_truncation = 64;
+						context_end		= context_begin + rear_truncation;
 					} else {
-						frontTruncation = column - 32;
-						contextBegin += frontTruncation;
-						if (std::distance(contextBegin, contextEnd) > 64) {
-							rearTruncation = frontTruncation + 64;
-							contextEnd	   = std::begin(errorString) + offset + rearTruncation;
+						front_truncation = localIndex ;
+						context_begin += front_truncation;
+						if (std::distance(context_begin, context_end) > 64) {
+							rear_truncation = front_truncation + 64;
+							context_end		= std::begin(errorString) + offset + rear_truncation;
 						}
 					}
 				}
-				if (contextEnd - contextBegin < static_cast<int64_t>(std::string::npos)) {
-					context = jsonifier::string{ contextBegin, static_cast<uint64_t>(contextEnd - contextBegin) };
-				}
-			}
+
+				context = jsonifier::string{ context_begin, static_cast<uint64_t>(context_end - context_begin) };
 		}
 
 		JSONIFIER_INLINE jsonifier::string reportError() const {
@@ -214,6 +206,11 @@ namespace jsonifier_internal {
 		uint64_t errorType{};
 		uint64_t line{};
 	};
+
+	template<const std::source_location& sourceLocation, error_classes errorClassNew, auto typeNew>
+	JSONIFIER_INLINE static error constructError(int64_t errorIndexNew, int64_t stringLengthNew, const char* stringViewNew) {
+		return { sourceLocation, errorClassNew, errorIndexNew, stringLengthNew, stringViewNew, static_cast<uint64_t>(typeNew) };
+	}
 
 	JSONIFIER_INLINE std::ostream& operator<<(std::ostream& os, const error& errorNew) {
 		os << errorNew.reportError();

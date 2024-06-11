@@ -72,10 +72,10 @@ namespace jsonifier_internal {
 
 		JSONIFIER_INLINE json_structural_iterator() noexcept = default;
 
-		JSONIFIER_INLINE json_structural_iterator(structural_index* startPtr, structural_index* endPtr, jsonifier::vector<error>& errorsNew) noexcept
-			: errors{ &errorsNew }, currentIndex{ startPtr }, rootIndex{ startPtr }, endIndex{ endPtr } {};
+		JSONIFIER_INLINE json_structural_iterator(structural_index* startPtr, structural_index* endPtr) noexcept
+			: currentIndex{ startPtr }, rootIndex{ startPtr }, endIndex{ endPtr } {};
 
-		JSONIFIER_INLINE const value_type& operator*() const {
+		JSONIFIER_INLINE value_type operator*() const {
 			return *currentIndex ? **currentIndex : defaultValue;
 		}
 
@@ -137,12 +137,10 @@ namespace jsonifier_internal {
 			std::swap(currentIndex, other.currentIndex);
 			std::swap(rootIndex, other.rootIndex);
 			std::swap(endIndex, other.endIndex);
-			std::swap(errors, other.errors);
 		}
 
 	  protected:
-		static constexpr value_type defaultValue{ 0x00ll };
-		jsonifier::vector<error>* errors{};
+		static constexpr value_type defaultValue{ '\0' };
 		pointer_internal currentIndex{};
 		pointer_internal rootIndex{};
 		pointer_internal endIndex{};

@@ -40,13 +40,13 @@ namespace jsonifier_internal {
 			} else {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				options.parserPtr->getErrors().emplace_back(
-					error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Object_Start>(iter - iter, end - iter, options.rootIter));
+					constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Object_Start>(iter - options.rootIter, end - options.rootIter, options.rootIter));
 				skipToEndOfValue(iter, end);
 				return;
 			}
-			static constexpr auto memberCount = std::tuple_size_v<jsonifier::concepts::core_t<value_type>>;
+			static constexpr auto memberCount = std::tuple_size_v<jsonifier::concepts::core_t<value_type_new>>;
 			if constexpr (memberCount > 0) {
-				static constexpr auto frozenMap{ makeMap<value_type>() };
+				static constexpr auto frozenMap{ makeMap<value_type_new>() };
 
 				bool first = true;
 				while (iter != end) {
@@ -61,7 +61,7 @@ namespace jsonifier_internal {
 						} else {
 							static constexpr auto sourceLocation{ std::source_location::current() };
 							options.parserPtr->getErrors().emplace_back(
-								error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Comma>(iter - iter, end - iter, options.rootIter));
+								constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Comma>(iter - options.rootIter, end - options.rootIter, options.rootIter));
 							skipToEndOfValue(iter, end);
 							return;
 						}
@@ -69,7 +69,7 @@ namespace jsonifier_internal {
 
 					const auto key = parseKey<options, value_type>(iter, end);
 
-					if constexpr (jsonifier::concepts::has_excluded_keys<value_type>) {
+					if constexpr (jsonifier::concepts::has_excluded_keys<value_type_new>) {
 						auto& keys = value.jsonifierExcludedKeys;
 						if (keys.find(static_cast<typename jsonifier::concepts::unwrap_t<decltype(keys)>::key_type>(key)) != keys.end()) {
 							++iter;
@@ -84,7 +84,7 @@ namespace jsonifier_internal {
 						} else {
 							static constexpr auto sourceLocation{ std::source_location::current() };
 							options.parserPtr->getErrors().emplace_back(
-								error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Colon>(iter - iter, end - iter, options.rootIter));
+								constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Colon>(iter - options.rootIter, end - options.rootIter, options.rootIter));
 							skipToEndOfValue(iter, end);
 							return;
 						}
@@ -126,7 +126,7 @@ namespace jsonifier_internal {
 			} else {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				options.parserPtr->getErrors().emplace_back(
-					error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Array_Start>(iter - iter, end - iter, options.rootIter));
+					constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Array_Start>(iter - options.rootIter, end - options.rootIter, options.rootIter));
 				skipToEndOfValue(iter, end);
 				return;
 			}
@@ -137,7 +137,7 @@ namespace jsonifier_internal {
 			} else {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				options.parserPtr->getErrors().emplace_back(
-					error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Array_End>(iter - iter, end - iter, options.rootIter));
+					constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Array_End>(iter - options.rootIter, end - options.rootIter, options.rootIter));
 				skipToEndOfValue(iter, end);
 				return;
 			}
@@ -154,7 +154,7 @@ namespace jsonifier_internal {
 				} else {
 					static constexpr auto sourceLocation{ std::source_location::current() };
 					options.parserPtr->getErrors().emplace_back(
-						error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Comma>(iter - iter, end - iter, options.rootIter));
+						constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Comma>(iter - options.rootIter, end - options.rootIter, options.rootIter));
 					return;
 				}
 			}
@@ -175,7 +175,7 @@ namespace jsonifier_internal {
 			} else {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				options.parserPtr->getErrors().emplace_back(
-					error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Object_Start>(iter - iter, end - iter, options.rootIter));
+					constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Object_Start>(iter - options.rootIter, end - options.rootIter, options.rootIter));
 				skipToEndOfValue(iter, end);
 				return;
 			}
@@ -193,7 +193,7 @@ namespace jsonifier_internal {
 					} else {
 						static constexpr auto sourceLocation{ std::source_location::current() };
 						options.parserPtr->getErrors().emplace_back(
-							error::constructError<sourceLocation, error_classes::Parsing>(iter - iter, end - iter, options.rootIter, parse_errors::Missing_Comma_Or_Object_End));
+							constructError<sourceLocation, error_classes::Parsing>(iter - options.rootIter, end - options.rootIter, options.rootIter, parse_errors::Missing_Comma_Or_Object_End));
 						skipToEndOfValue(iter, end);
 						return;
 					}
@@ -207,7 +207,7 @@ namespace jsonifier_internal {
 				} else {
 					static constexpr auto sourceLocation{ std::source_location::current() };
 					options.parserPtr->getErrors().emplace_back(
-						error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Colon>(iter - iter, end - iter, options.rootIter));
+						constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Colon>(iter - options.rootIter, end - options.rootIter, options.rootIter));
 					skipToEndOfValue(iter, end);
 					return;
 				}
@@ -245,7 +245,7 @@ namespace jsonifier_internal {
 			} else {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				options.parserPtr->getErrors().emplace_back(
-					error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Array_Start>(iter - iter, end - iter, options.rootIter));
+					constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Array_Start>(iter - options.rootIter, end - options.rootIter, options.rootIter));
 				skipToEndOfValue(iter, end);
 				return;
 			}
@@ -267,7 +267,7 @@ namespace jsonifier_internal {
 						++iter;
 					} else {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Array_End>(
+						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Array_End>(
 							iter - options.rootIter, end - options.rootIter, options.rootIter));
 					}
 					return;
@@ -283,7 +283,7 @@ namespace jsonifier_internal {
 						++iter;
 					} else {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Array_End>(
+						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Array_End>(
 							iter - options.rootIter, end - options.rootIter, options.rootIter));
 					}
 					return;
@@ -300,7 +300,7 @@ namespace jsonifier_internal {
 			} else {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				options.parserPtr->getErrors().emplace_back(
-					error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Array_Start>(iter - iter, end - iter, options.rootIter));
+					constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_Array_Start>(iter - options.rootIter, end - options.rootIter, options.rootIter));
 				skipToEndOfValue(iter, end);
 				return;
 			}
@@ -322,7 +322,7 @@ namespace jsonifier_internal {
 						++iter;
 					} else {
 						static constexpr auto sourceLocation{ std::source_location::current() };
-						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing>(iter - options.rootIter, end - options.rootIter,
+						options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing>(iter - options.rootIter, end - options.rootIter,
 							options.rootIter, parse_errors::Missing_Array_End));
 					}
 					return;
@@ -375,7 +375,7 @@ namespace jsonifier_internal {
 			if (!parseNull(iter)) {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				options.parserPtr->getErrors().emplace_back(
-					error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Null_Value>(iter - iter, end - iter, options.rootIter));
+					constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Null_Value>(iter - options.rootIter, end - options.rootIter, options.rootIter));
 				return;
 			}
 		}
@@ -403,7 +403,7 @@ namespace jsonifier_internal {
 			if (!parseBool(value, iter)) {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				options.parserPtr->getErrors().emplace_back(
-					error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Bool_Value>(iter - iter, end - iter, options.rootIter));
+					constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Bool_Value>(iter - options.rootIter, end - options.rootIter, options.rootIter));
 				return;
 			}
 		}

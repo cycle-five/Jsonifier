@@ -246,10 +246,10 @@ namespace jsonifier_internal {
 				skipNumber(iter, end);
 				break;
 			}
-			[[likely]] default: {
-				++iter;
-				break;
-			}
+				[[likely]] default : {
+					++iter;
+					break;
+				}
 		}
 	}
 
@@ -387,10 +387,10 @@ namespace jsonifier_internal {
 					skipNumber(iter, end);
 					break;
 				}
-				[[likely]] default: {
-					++iter;
-					break;
-				}
+					[[likely]] default : {
+						++iter;
+						break;
+					}
 			}
 		}
 		return currentCount;
@@ -401,29 +401,6 @@ namespace jsonifier_internal {
 		uint32_t lengthRange{};
 		uint32_t maxLength{};
 	};
-
-	template<key_stats_t stats, typename iterator_type> [[nodiscard]] JSONIFIER_INLINE jsonifier::string_view parseKeyCx(iterator_type&& iter, iterator_type&& end) noexcept {
-		static constexpr auto lengthRange{ stats.lengthRange };
-
-		auto start{ iter };
-
-		iter += stats.minLength;
-
-		if constexpr (lengthRange == 0) {
-			return { start, stats.minLength };
-		} else if constexpr (lengthRange == 1) {
-			if (*iter != '"') {
-				++iter;
-			}
-			return { start, size_t(iter - start) };
-		} else {
-			memchar<'"'>(iter, end - iter);
-			if (!iter) {
-				iter = start;
-			}
-			return { start, size_t(iter - start) };
-		}
-	}
 
 	template<size_t index, typename value_type> constexpr auto keyName = [] {
 		using V = std::decay_t<value_type>;
@@ -452,22 +429,38 @@ namespace jsonifier_internal {
 	template<const auto& options, typename value_type, typename iterator_type> JSONIFIER_INLINE jsonifier::string_view parseKey(iterator_type&& iter, iterator_type&& end) {
 		if (*iter != '"') [[unlikely]] {
 			static constexpr auto sourceLocation{ std::source_location::current() };
-			options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - options.rootIter,
+			options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - options.rootIter,
 				end - options.rootIter, options.rootIter));
 			return {};
 		} else {
 			++iter;
 		}
 
-		static constexpr auto stats{ getKeyStats<0, std::tuple_size_v<jsonifier::concepts::core_t<value_type>>, value_type>() };
+		static constexpr auto N{ std::tuple_size_v<jsonifier::concepts::core_t<value_type>> };
+
+		const auto start{ iter };
+
+		static constexpr auto stats{ getKeyStats<0, N, value_type>() };
+
 		if constexpr (stats.lengthRange < 24) {
 			if ((iter + stats.maxLength) < end) [[likely]] {
-				jsonifier::string_view newKey{ parseKeyCx<stats>(iter, end) };
-				++iter;
-				return newKey;
+				static constexpr auto lengthRange{ stats.lengthRange };
+
+				iter += stats.minLength;
+
+				if constexpr (lengthRange == 0) {
+					++iter;
+					return { start, stats.minLength };
+				} else if constexpr (lengthRange == 1) {
+					if (*iter != '"') {
+						++iter;
+					}
+					jsonifier::string_view key{ start, size_t(iter - start) };
+					++iter;
+					return key;
+				}
 			}
 		}
-		auto start = iter;
 		memchar<'"'>(iter, (end - iter));
 		if (iter) {
 			auto newPtr = iter;
@@ -486,12 +479,14 @@ namespace jsonifier_internal {
 
 		if (*iter != '"') [[unlikely]] {
 			static constexpr auto sourceLocation{ std::source_location::current() };
-			options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(
+			options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(
 				iter.getCurrentStringIndex(), iter.getStringLength(), options.rootIter));
 			return {};
 		} else {
 			++iter;
 		}
+
+		static constexpr auto N{ std::tuple_size_v<jsonifier::concepts::core_t<value_type>> };
 
 		return jsonifier::string_view{ start + 1, static_cast<uint64_t>(iter.operator->() - (start + 2)) };
 	}

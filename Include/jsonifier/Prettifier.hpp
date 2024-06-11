@@ -73,12 +73,12 @@ namespace jsonifier_internal {
 			derivedRef.index = 0;
 			derivedRef.errors.clear();
 			derivedRef.section.reset(in.data(), in.size());
-			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end(), derivedRef.errors };
-			json_structural_iterator end{ derivedRef.section.end(), derivedRef.section.end(), derivedRef.errors };
+			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end() };
+			json_structural_iterator end{ derivedRef.section.end(), derivedRef.section.end() };
 			if (!iter) {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				getErrors().emplace_back(
-					error::constructError<sourceLocation, error_classes::Prettifying, prettify_errors::No_Input>(iter - iter, end - iter, static_cast<const char*>(iter)));
+					constructError<sourceLocation, error_classes::Prettifying, prettify_errors::No_Input>(iter - iter, end - iter, static_cast<const char*>(iter)));
 				return jsonifier::concepts::unwrap_t<string_type>{};
 			}
 			jsonifier::concepts::unwrap_t<string_type> newString{};
@@ -101,12 +101,12 @@ namespace jsonifier_internal {
 			derivedRef.index = 0;
 			derivedRef.errors.clear();
 			derivedRef.section.reset(in.data(), in.size());
-			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end(), derivedRef.errors };
-			json_structural_iterator end{ derivedRef.section.end(), derivedRef.section.end(), derivedRef.errors };
+			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end() };
+			json_structural_iterator end{ derivedRef.section.end(), derivedRef.section.end() };
 			if (!iter) {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				getErrors().emplace_back(
-					error::constructError<sourceLocation, error_classes::Prettifying, prettify_errors::No_Input>(iter - iter, end - iter, static_cast<const char*>(iter)));
+					constructError<sourceLocation, error_classes::Prettifying, prettify_errors::No_Input>(iter - iter, end - iter, static_cast<const char*>(iter)));
 				return false;
 			}
 			prettify_impl<derived_type>::template impl<optionsFinal>(iter, derivedRef.stringBuffer, derivedRef.index);

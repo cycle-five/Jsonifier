@@ -36,30 +36,14 @@ namespace jsonifier_internal {
 
 	template<uint64_t currentIndex, uint64_t maxIndex, convertible_to_string_view arg_type01, is_member_ptr arg_type02, typename tuple_type, typename... arg_types>
 	constexpr decltype(auto) generateInterleavedTuple(const tuple_type& newTuple, const arg_type01& arg01, const arg_type02& arg02, const arg_types&... args) {
-		if constexpr (std::tuple_size_v<tuple_type> > 0) {
-			if constexpr (currentIndex < maxIndex - 2) {
-				auto newPtrArg	= arg02;
-				auto newerPair	= std::make_tuple(string_literal{ arg01 }, newPtrArg);
-				auto newerTuple = std::tuple_cat(newTuple, std::make_tuple(newerPair));
-				return generateInterleavedTuple<currentIndex + 2, maxIndex>(newerTuple, args...);
-			} else {
-				auto newPtrArg	= arg02;
-				auto newerPair	= std::make_tuple(string_literal{ arg01 }, newPtrArg);
-				auto newerTuple = std::tuple_cat(newTuple, std::make_tuple(newerPair));
-				return newerTuple;
-			}
+		auto newPtrArg	= arg02;
+		auto newerPair	= std::make_tuple(string_literal{ arg01 }, newPtrArg);
+		auto newerTuple = std::tuple_cat(newTuple, std::make_tuple(newerPair));
+
+		if constexpr (currentIndex < maxIndex - 2) {
+			return generateInterleavedTuple<currentIndex + 2, maxIndex>(newerTuple, args...);
 		} else {
-			if constexpr (currentIndex < maxIndex - 2) {
-				auto newPtrArg	= arg02;
-				auto newerPair	= std::make_tuple(string_literal{ arg01 }, newPtrArg);
-				auto newerTuple = std::make_tuple(newerPair);
-				return generateInterleavedTuple<currentIndex + 2, maxIndex>(newerTuple, args...);
-			} else {
-				auto newPtrArg	= arg02;
-				auto newerPair	= std::make_tuple(string_literal{ arg01 }, newPtrArg);
-				auto newerTuple = std::make_tuple(newerPair);
-				return newerTuple;
-			}
+			return newerTuple;
 		}
 	}
 

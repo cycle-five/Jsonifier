@@ -61,21 +61,21 @@ namespace jsonifier_internal {
 			derivedRef.index = 0;
 			derivedRef.errors.clear();
 			derivedRef.section.reset(in.data(), in.size());
-			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end(), derivedRef.errors };
-			json_structural_iterator end{ derivedRef.section.end(), derivedRef.section.end(), derivedRef.errors };
+			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end() };
+			json_structural_iterator end{ derivedRef.section.end(), derivedRef.section.end() };
 			static constexpr minify_options_internal<derived_type> options{};
 			options.minifierPtr = this;
 			if (!iter) {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				getErrors().emplace_back(
-					error::constructError<sourceLocation, error_classes::Minifying, minify_errors::No_Input>(iter - iter, end - iter, static_cast<const char*>(iter)));
+					constructError<sourceLocation, error_classes::Minifying, minify_errors::No_Input>(iter - iter, end - iter, static_cast<const char*>(iter)));
 				return jsonifier::concepts::unwrap_t<string_type>{};
 			}
 			jsonifier::concepts::unwrap_t<string_type> newString{};
 			minify_impl<derived_type>::template impl<options>(iter, derivedRef.stringBuffer, derivedRef.index);
 			if (derivedRef.index != minifyError) {
 				newString.resize(derivedRef.index);
-				std::memcpy(newString.data(), derivedRef.stringBuffer.data(), derivedRef.index);
+				std::copy(derivedRef.stringBuffer.data(), derivedRef.stringBuffer.data() + derivedRef.index, newString.data());
 			} else {
 				return newString;
 			}
@@ -84,28 +84,28 @@ namespace jsonifier_internal {
 
 		template<jsonifier::concepts::string_t string_type01, jsonifier::concepts::string_t string_type02>
 		JSONIFIER_INLINE bool minifyJson(string_type01&& in, string_type02&& out) noexcept {
-			if (derivedRef.stringBuffer.size() < in.size()) [[unlikely]] {
-				derivedRef.stringBuffer.resize(in.size());
+			if (out.size() < in.size()) [[unlikely]] {
+				out.resize(in.size());
 			}
 			derivedRef.index = 0;
 			derivedRef.errors.clear();
 			derivedRef.section.reset(in.data(), in.size());
-			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end(), derivedRef.errors };
-			json_structural_iterator end{ derivedRef.section.end(), derivedRef.section.end(), derivedRef.errors };
+			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end() };
+			json_structural_iterator end{ derivedRef.section.end(), derivedRef.section.end() };
 			static constexpr minify_options_internal<derived_type> options{};
 			options.minifierPtr = this;
 			if (!iter) {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				getErrors().emplace_back(
-					error::constructError<sourceLocation, error_classes::Minifying, minify_errors::No_Input>(iter - iter, end - iter, static_cast<const char*>(iter)));
+					constructError<sourceLocation, error_classes::Minifying, minify_errors::No_Input>(iter - iter, end - iter, static_cast<const char*>(iter)));
 				return false;
 			}
 			minify_impl<derived_type>::template impl<options>(iter, out, derivedRef.index);
 			if (derivedRef.index != minifyError) {
-				if (out.size() != derivedRef.index || out != derivedRef.stringBuffer) {
+				if (out.size() != derivedRef.index) {
 					out.resize(derivedRef.index);
-					std::memcpy(out.data(), derivedRef.stringBuffer.data(), derivedRef.index);
 				}
+				std::copy(derivedRef.stringBuffer.data(), derivedRef.stringBuffer.data() + derivedRef.index, out.data());
 			} else {
 				return false;
 			}

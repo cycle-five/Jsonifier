@@ -75,13 +75,10 @@ namespace jsonifier_internal {
 				},
 				std::move(memberIt->second));
 
-
 			if constexpr (indexNew != size - 1) {
 				if constexpr (options.optionsReal.prettify) {
-					if constexpr (jsonifier::concepts::buffer_like<buffer_type>) {
-						if (auto k = index + options.indent + 256; k > buffer.size()) [[unlikely]] {
-							buffer.resize(max(buffer.size() * 2, k));
-						}
+					if (auto k = index + options.indent + 256; k > buffer.size()) [[unlikely]] {
+						buffer.resize(max(buffer.size() * 2, k));
 					}
 					writeCharactersUnchecked<",\n">(buffer, index);
 					writeCharactersUnchecked<' '>(options.indent * options.optionsReal.indentSize, buffer, index);
@@ -274,39 +271,39 @@ namespace jsonifier_internal {
 		template<const serialize_options_internal& options, jsonifier::concepts::char_t value_type, jsonifier::concepts::buffer_like buffer_type,
 			jsonifier::concepts::uint64_type index_type>
 		JSONIFIER_INLINE static void impl(value_type&& value, buffer_type&& buffer, index_type&& index) {
-			writeCharacter<json_structural_type::String>(buffer, index);
+			writeCharacter<'"'>(buffer, index);
 			switch (value) {
 				[[unlikely]] case '\b': {
-					writeCharacters(buffer, index, "\\b");
+					writeCharacters<"\\b">(buffer, index);
 					break;
 				}
 				[[unlikely]] case '\t': {
-					writeCharacters(buffer, index, "\\t");
+					writeCharacters<"\\t">(buffer, index);
 					break;
 				}
 				[[unlikely]] case '\n': {
-					writeCharacters(buffer, index, "\\n");
+					writeCharacters<"\\n">(buffer, index);
 					break;
 				}
-				[[unlikely]] case 0x0Cu: {
-					writeCharacters(buffer, index, "\\f");
+				[[unlikely]] case '\f': {
+					writeCharacters<"\\f">(buffer, index);
 					break;
 				}
 				[[unlikely]] case '\r': {
-					writeCharacters(buffer, index, "\\r");
+					writeCharacters<"\\r">(buffer, index);
 					break;
 				}
 				[[unlikely]] case '"': {
-					writeCharacters(buffer, index, "\\\"");
+					writeCharacters<"\\\"">(buffer, index);
 					break;
 				}
-				[[unlikely]] case 0x5CU: {
-					writeCharacters(buffer, index, "\\\\");
+				[[unlikely]] case '\\': {
+					writeCharacters<"\\\\">(buffer, index);
 					break;
 				}
 				[[likely]] default: { writeCharacter(buffer, index, value); }
 			}
-			writeCharacter<json_structural_type::String>(buffer, index);
+			writeCharacter<'"'>(buffer, index);
 		}
 	};
 

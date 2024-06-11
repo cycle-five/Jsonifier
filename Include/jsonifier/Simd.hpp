@@ -44,7 +44,7 @@ namespace jsonifier_internal {
 			if (length == index) [[unlikely]] {
 				return 0;
 			}
-			std::memset(dest, 0x20, BitsPerStep);
+			std::memset(dest, ' ', BitsPerStep);
 			std::memcpy(dest, inString + index, length - index);
 			return length - index;
 		}

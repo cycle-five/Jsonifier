@@ -131,7 +131,7 @@ namespace jsonifier_internal {
 		static constexpr uint32_t codePointLessThan01{ 0xd800 };
 		static constexpr uint32_t codePointLessThan02{ 0xdc00 };
 		static constexpr char_type01 quotesValue{ static_cast<char_type01>('\\' << 8) };
-		static constexpr char_type01 uValue{ static_cast<char_type01>(0x75u) };
+		static constexpr char_type01 uValue{ static_cast<char_type01>('u') };
 		uint32_t codePoint = hexToU32NoCheck(srcPtr + 2);
 		srcPtr += 6;
 		if (codePoint >= codePointLessThan01 && codePoint < codePointLessThan02) {
@@ -426,7 +426,7 @@ namespace jsonifier_internal {
 						return string2 + nextBackslashOrQuote;
 					} else if (escapeChar == '\\') {
 						escapeChar = string1[nextBackslashOrQuote + 1];
-						if (escapeChar == 0x75u) {
+						if (escapeChar == 'u') {
 							lengthNew -= nextBackslashOrQuote;
 							string1 += nextBackslashOrQuote;
 							string2 += nextBackslashOrQuote;
@@ -473,7 +473,7 @@ namespace jsonifier_internal {
 						return string2 + nextBackslashOrQuote;
 					} else if (escapeChar == '\\') {
 						escapeChar = string1[nextBackslashOrQuote + 1];
-						if (escapeChar == 0x75u) {
+						if (escapeChar == 'u') {
 							lengthNew -= nextBackslashOrQuote;
 							string1 += nextBackslashOrQuote;
 							string2 += nextBackslashOrQuote;
@@ -520,7 +520,7 @@ namespace jsonifier_internal {
 						return string2 + nextBackslashOrQuote;
 					} else if (escapeChar == '\\') {
 						escapeChar = string1[nextBackslashOrQuote + 1];
-						if (escapeChar == 0x75u) {
+						if (escapeChar == 'u') {
 							lengthNew -= nextBackslashOrQuote;
 							string1 += nextBackslashOrQuote;
 							string2 += nextBackslashOrQuote;
@@ -566,7 +566,7 @@ namespace jsonifier_internal {
 						return string2 + nextBackslashOrQuote;
 					} else if (escapeChar == '\\') {
 						escapeChar = string1[nextBackslashOrQuote + 1];
-						if (escapeChar == 0x75u) {
+						if (escapeChar == 'u') {
 							lengthNew -= nextBackslashOrQuote;
 							string1 += nextBackslashOrQuote;
 							string2 += nextBackslashOrQuote;
@@ -809,11 +809,11 @@ namespace jsonifier_internal {
 	template<const auto& options, typename value_type, simd_structural_iterator_t iterator_type>
 	JSONIFIER_INLINE void parseString(value_type&& value, iterator_type&& iter, iterator_type&& end) {
 		auto newPtr = iter.operator->();
-		if (*iter == 0x22u) [[likely]] {
+		if (*iter == '"') [[likely]] {
 			++iter;
 		} else {
 			static constexpr auto sourceLocation{ std::source_location::current() };
-			options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - options.rootIter,
+			options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - options.rootIter,
 				end - options.rootIter, options.rootIter));
 			skipToNextValue(iter, end);
 			return;
@@ -834,7 +834,7 @@ namespace jsonifier_internal {
 				}
 			} else {
 				static constexpr auto sourceLocation{ std::source_location::current() };
-				options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_String_Characters>(
+				options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_String_Characters>(
 					iter - options.rootIter, end - options.rootIter, options.rootIter));
 				skipToNextValue(iter, end);
 				return;
@@ -847,7 +847,7 @@ namespace jsonifier_internal {
 			++iter;
 		} else {
 			static constexpr auto sourceLocation{ std::source_location::current() };
-			options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - options.rootIter,
+			options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Missing_String_Start>(iter - options.rootIter,
 				end - options.rootIter, options.rootIter));
 			return;
 		}
@@ -867,7 +867,7 @@ namespace jsonifier_internal {
 				}
 			} else {
 				static constexpr auto sourceLocation{ std::source_location::current() };
-				options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_String_Characters>(
+				options.parserPtr->getErrors().emplace_back(constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_String_Characters>(
 					iter - options.rootIter, end - options.rootIter, options.rootIter));
 				return;
 			}

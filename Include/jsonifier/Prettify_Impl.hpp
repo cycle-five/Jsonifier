@@ -89,7 +89,7 @@ namespace jsonifier_internal {
 						if (options.indent < 0) {
 							static constexpr auto sourceLocation{ std::source_location::current() };
 							options.prettifierPtr->getErrors().emplace_back(
-								error::constructError<sourceLocation, error_classes::Prettifying, prettify_errors::Incorrect_Structural_Index>(iter.getCurrentStringIndex(),
+								constructError<sourceLocation, error_classes::Prettifying, prettify_errors::Incorrect_Structural_Index>(iter.getCurrentStringIndex(),
 									iter.getStringLength(), iter.getRootPtr()));
 							return;
 						}
@@ -136,7 +136,7 @@ namespace jsonifier_internal {
 						if (options.indent < 0) {
 							static constexpr auto sourceLocation{ std::source_location::current() };
 							options.prettifierPtr->getErrors().emplace_back(
-								error::constructError<sourceLocation, error_classes::Prettifying, prettify_errors::Incorrect_Structural_Index>(iter.getCurrentStringIndex(),
+								constructError<sourceLocation, error_classes::Prettifying, prettify_errors::Incorrect_Structural_Index>(iter.getCurrentStringIndex(),
 									iter.getStringLength(), iter.getRootPtr()));
 							return;
 						}
@@ -154,7 +154,7 @@ namespace jsonifier_internal {
 					[[unlikely]] default: {
 						static constexpr auto sourceLocation{ std::source_location::current() };
 						options.prettifierPtr->getErrors().emplace_back(
-							error::constructError<sourceLocation, error_classes::Prettifying, prettify_errors::Incorrect_Structural_Index>(iter.getCurrentStringIndex(),
+							constructError<sourceLocation, error_classes::Prettifying, prettify_errors::Incorrect_Structural_Index>(iter.getCurrentStringIndex(),
 								iter.getStringLength(), iter.getRootPtr()));
 						return;
 					}
