@@ -32,15 +32,17 @@ namespace jsonifier_internal {
 
 	// https://en.wikipedia.org/wiki/Fowler-Noll-Vo_hash_function
 	// http://www.isthe.com/chongo/tech/comp/fnv/index.html#FNV-param
-	static constexpr uint32_t fnv32OffsetBasis{ 0x811c9dc5u };
-	static constexpr uint32_t fnv32Prime{ 0x01000193u };
+	static constexpr uint64_t fnv64OffsetBasis{ 0xcbf29ce484222325 };
+	static constexpr uint64_t fnv64Prime{ 0x00000100000001B3 };
 
-	JSONIFIER_INLINE uint32_t fnv1aHashRt(const void* value, uint64_t size) {
-		uint32_t hash	   = fnv32OffsetBasis * fnv32Prime;
-		const char* newPtr = static_cast<const char*>(value);
-		for (uint64_t x = 0; x < size; ++x) {
-			hash = (hash ^ static_cast<uint32_t>(static_cast<std::byte>(newPtr[x]))) * fnv32Prime;
+	struct fnv1a_hash {
+		constexpr uint64_t operator()(const char* value, size_t size, uint64_t seed = 0) const {
+			uint64_t hash		   = fnv64OffsetBasis * fnv64Prime ^ seed;
+			string_view_ptr newPtr = static_cast<string_view_ptr>(value);
+			for (uint64_t x = 0; x < size; ++x) {
+				hash = (hash ^ static_cast<uint64_t>(static_cast<std::byte>(newPtr[x]))) * fnv64Prime;
+			}
+			return static_cast<uint64_t>(hash >> 8);
 		}
-		return static_cast<uint32_t>(hash >> 8);
-	}
+	};
 }

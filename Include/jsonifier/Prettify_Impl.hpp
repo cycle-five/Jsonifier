@@ -29,11 +29,11 @@ namespace jsonifier_internal {
 
 	template<typename derived_type> struct prettify_impl {
 		template<const prettify_options_internal<derived_type>& options, jsonifier::concepts::string_t string_type, typename iterator_type>
-		JSONIFIER_INLINE static void impl(iterator_type&& iter, string_type&& out, uint64_t& index) noexcept {
+		JSONIFIER_INLINE static void impl(iterator_type&& iter, iterator_type&& end, string_type&& out, uint64_t& index) noexcept {
 			jsonifier::vector<json_structural_type> state{};
 			state.resize(64);
 
-			while (iter) {
+			while (iter != end) {
 				switch (asciiClassesMap[static_cast<uint64_t>(*iter)]) {
 					[[likely]] case json_structural_type::String: {
 						auto valueNew = iter.operator->();

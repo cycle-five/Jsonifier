@@ -135,7 +135,7 @@ namespace jsonifier_internal {
 		uint32_t codePoint = hexToU32NoCheck(srcPtr + 2);
 		srcPtr += 6;
 		if (codePoint >= codePointLessThan01 && codePoint < codePointLessThan02) {
-			auto* srcData = static_cast<const char*>(srcPtr);
+			const char* srcData = static_cast<const char*>(srcPtr);
 			if (((srcData[0] << 8) | srcData[1]) != (quotesValue | uValue)) {
 				codePoint = subCodePoint;
 			} else {
@@ -161,7 +161,7 @@ namespace jsonifier_internal {
 		return hasZero(value & newBytes);
 	}
 
-	template<typename simd_type, typename integer_type> JSONIFIER_INLINE integer_type copyAndFindParse(const void* string1, void* string2, simd_type& simdValue) {
+	template<typename simd_type, typename integer_type> JSONIFIER_INLINE integer_type copyAndFindParse(const char* string1, char* string2, simd_type& simdValue) {
 		simdValue = simd_internal::gatherValuesU<simd_type>(string1);
 		std::memcpy(string2, string1, sizeof(simd_type));
 		return simd_internal::tzcnt(static_cast<integer_type>(
@@ -169,7 +169,7 @@ namespace jsonifier_internal {
 	}
 
 	template<jsonifier::concepts::unsigned_type simd_type, jsonifier::concepts::unsigned_type integer_type>
-	JSONIFIER_INLINE integer_type copyAndFindParse(const void* string1, void* string2, simd_type& simdValue) {
+	JSONIFIER_INLINE integer_type copyAndFindParse(const char* string1, char* string2, simd_type& simdValue) {
 		std::memcpy(&simdValue, string1, sizeof(simd_type));
 		std::memcpy(string2, string1, sizeof(simd_type));
 		constexpr uint64_t mask	 = repeatByte<0b01111111, integer_type>();
@@ -181,14 +181,14 @@ namespace jsonifier_internal {
 		return static_cast<integer_type>(simd_internal::tzcnt(next) >> 3u);
 	}
 
-	template<typename simd_type, typename integer_type> JSONIFIER_INLINE integer_type findParse(const void* string1, simd_type& simdValue) {
+	template<typename simd_type, typename integer_type> JSONIFIER_INLINE integer_type findParse(const char* string1, simd_type& simdValue) {
 		simdValue = simd_internal::gatherValuesU<simd_type>(string1);
 		return simd_internal::tzcnt(static_cast<integer_type>(
 			simd_internal::opCmpEq(simdValue, simd_internal::simdChars<'\\', simd_type>) | simd_internal::opCmpEq(simdValue, simd_internal::simdChars<'"', simd_type>)));
 	}
 
 	template<jsonifier::concepts::unsigned_type simd_type, jsonifier::concepts::unsigned_type integer_type>
-	JSONIFIER_INLINE integer_type findParse(const void* string1, simd_type& simdValue) {
+	JSONIFIER_INLINE integer_type findParse(const char* string1, simd_type& simdValue) {
 		std::memcpy(&simdValue, string1, sizeof(simd_type));
 		constexpr uint64_t mask	 = repeatByte<0b01111111, integer_type>();
 		const uint64_t lo7		 = simdValue & mask;
@@ -199,7 +199,7 @@ namespace jsonifier_internal {
 		return static_cast<integer_type>(simd_internal::tzcnt(next) >> 3u);
 	}
 
-	template<typename simd_type, typename integer_type> JSONIFIER_INLINE integer_type copyAndFindSerialize(const void* string1, void* string2, simd_type& simdValue) {
+	template<typename simd_type, typename integer_type> JSONIFIER_INLINE integer_type copyAndFindSerialize(const char* string1, char* string2, simd_type& simdValue) {
 		simdValue = simd_internal::gatherValuesU<simd_type>(string1);
 		std::memcpy(string2, string1, sizeof(simd_type));
 		return simd_internal::tzcnt(static_cast<integer_type>(simd_internal::opCmpEq(simd_internal::opShuffle(simd_internal::escapeableTable00<simd_type>, simdValue), simdValue) |
@@ -207,7 +207,7 @@ namespace jsonifier_internal {
 	}
 
 	template<jsonifier::concepts::unsigned_type simd_type, jsonifier::concepts::unsigned_type integer_type>
-	JSONIFIER_INLINE integer_type copyAndFindSerialize(const void* string1, void* string2, simd_type& simdValue) {
+	JSONIFIER_INLINE integer_type copyAndFindSerialize(const char* string1, char* string2, simd_type& simdValue) {
 		std::memcpy(&simdValue, string1, sizeof(simd_type));
 		std::memcpy(string2, string1, sizeof(simd_type));
 		constexpr uint64_t mask	 = repeatByte<0b01111111, integer_type>();
@@ -220,7 +220,7 @@ namespace jsonifier_internal {
 		return static_cast<integer_type>(simd_internal::tzcnt(next) >> 3u);
 	}
 
-	template<typename iterator_type01> JSONIFIER_INLINE void skipShortStringImpl(iterator_type01& string1, uint64_t& lengthNew) {
+	template<typename iterator_type01> JSONIFIER_INLINE void skipShortStringImpl(iterator_type01& string1, uint64_t lengthNew) {
 		static constexpr uint8_t quotesValue{ static_cast<uint8_t>('"') };
 		while (static_cast<int64_t>(lengthNew) > 0) {
 			if (*string1 == quotesValue || *string1 == '\\') {
@@ -239,7 +239,7 @@ namespace jsonifier_internal {
 		return;
 	}
 
-	template<typename iterator_type01> JSONIFIER_INLINE void skipStringImpl(iterator_type01& string1, uint64_t& lengthNew) {
+	template<typename iterator_type01> JSONIFIER_INLINE void skipStringImpl(iterator_type01& string1, uint64_t lengthNew) {
 		using char_type01 =
 			typename std::conditional_t<std::is_pointer_v<iterator_type01>, std::remove_pointer_t<iterator_type01>, typename std::iterator_traits<iterator_type01>::value_type>;
 		std::remove_const_t<char_type01> escapeChar;
@@ -774,11 +774,11 @@ namespace jsonifier_internal {
 	}
 
 	template<json_structural_iterator_t iterator_type, jsonifier::concepts::bool_t bool_type> JSONIFIER_INLINE bool parseBool(bool_type& value, iterator_type&& iter) {
-		if (compare<4>("true", iter.operator const char*&())) {
+		if (compare<4>("true", iter.operator const char*())) {
 			value = true;
 			++iter;
 			return true;
-		} else if (compare<5>("false", iter.operator const char*&())) {
+		} else if (compare<5>("false", iter.operator const char*())) {
 			value = false;
 			++iter;
 			return true;
@@ -797,7 +797,7 @@ namespace jsonifier_internal {
 	}
 
 	template<json_structural_iterator_t iterator_type> JSONIFIER_INLINE bool parseNull(iterator_type&& iter) {
-		if (compare<4>("null", iter.operator const char*&())) {
+		if (compare<4>("null", iter.operator const char*())) {
 			++iter;
 			return true;
 		} else {
@@ -873,6 +873,5 @@ namespace jsonifier_internal {
 			}
 		}
 	}
-
 
 }// namespace jsonifier_internal

@@ -27,8 +27,12 @@
 
 namespace jsonifier_internal {
 
+	template<typename iterator_type> JSONIFIER_INLINE uint64_t getRemainingLength(iterator_type&& iter, iterator_type&& end) {
+		return end - iter;
+	}
+
 	template<typename derived_type> struct validate_impl<json_structural_type::Object_Start, derived_type> {
-		template<const validate_options_internal<derived_type>& options, typename iterator_type01> static bool impl(iterator_type01&& iter, uint64_t& depth) {
+		template<const validate_options_internal<derived_type>& options, typename iterator_type> static bool impl(iterator_type&& iter, iterator_type&& end, uint64_t& depth) {
 			if (!iter || *iter != '{') {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				options.validatorPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Validating, validate_errors::Missing_Object_Start>(
@@ -43,8 +47,8 @@ namespace jsonifier_internal {
 				return true;
 			}
 
-			while (iter) {
-				if (!validate_impl<json_structural_type::String, derived_type>::template impl<options>(iter)) {
+			while (iter != end) {
+				if (!validate_impl<json_structural_type::String, derived_type>::template impl<options>(iter, end)) {
 					static constexpr auto sourceLocation{ std::source_location::current() };
 					options.validatorPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Validating, validate_errors::Invalid_String_Characters>(
 						iter - iter.getRootPtr(), iter.getEndPtr() - iter.getRootPtr(), iter.getRootPtr()));
@@ -59,7 +63,7 @@ namespace jsonifier_internal {
 				}
 
 				++iter;
-				if (!validator<derived_type>::template impl<options>(iter, depth)) {
+				if (!validator<derived_type>::template impl<options>(iter, end, depth)) {
 					return false;
 				}
 
@@ -67,7 +71,7 @@ namespace jsonifier_internal {
 					++iter;
 				} else if (*iter == '}') {
 					++iter;
-					if (iter && *iter != ',' && *iter != ']' && *iter != '}') {
+					if (iter < end && *iter != ',' && *iter != ']' && *iter != '}') {
 						static constexpr auto sourceLocation{ std::source_location::current() };
 						options.validatorPtr->getErrors().emplace_back(
 							error::constructError<sourceLocation, error_classes::Validating, validate_errors::Missing_Comma_Or_Closing_Brace>(iter - iter.getRootPtr(),
@@ -96,7 +100,7 @@ namespace jsonifier_internal {
 	};
 
 	template<typename derived_type> struct validate_impl<json_structural_type::Array_Start, derived_type> {
-		template<const validate_options_internal<derived_type>& options, typename iterator_type01> static bool impl(iterator_type01&& iter, uint64_t& depth) {
+		template<const validate_options_internal<derived_type>& options, typename iterator_type> static bool impl(iterator_type&& iter, iterator_type&& end, uint64_t& depth) {
 			if (!iter || *iter != '[') {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				options.validatorPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Validating, validate_errors::Missing_Array_Start>(
@@ -106,21 +110,21 @@ namespace jsonifier_internal {
 			++depth;
 			++iter;
 
-			if (*iter == ']') {
+			if (iter.operator bool() && *iter == ']') {
 				++iter;
 				--depth;
 				return true;
 			}
 
-			while (iter) {
-				if (!validator<derived_type>::template impl<options>(iter, depth)) {
+			while (iter != end) {
+				if (!validator<derived_type>::template impl<options>(iter, end, depth)) {
 					return false;
 				}
 				if (*iter == ',') {
 					++iter;
 				} else if (*iter == ']') {
 					++iter;
-					if (iter && *iter != ',' && *iter != ']' && *iter != '}') {
+					if (iter < end && *iter != ',' && *iter != ']' && *iter != '}') {
 						static constexpr auto sourceLocation{ std::source_location::current() };
 						options.validatorPtr->getErrors().emplace_back(
 							error::constructError<sourceLocation, error_classes::Validating, validate_errors::Missing_Comma_Or_Closing_Brace>(iter - iter.getRootPtr(),
@@ -161,7 +165,7 @@ namespace jsonifier_internal {
 		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
 
 	template<typename derived_type> struct validate_impl<json_structural_type::String, derived_type> {
-		template<const validate_options_internal<derived_type>& options, typename iterator_type> static bool impl(iterator_type&& iter) {
+		template<const validate_options_internal<derived_type>& options, typename iterator_type> static bool impl(iterator_type&& iter, iterator_type&& end) {
 			auto newPtr = iter.operator->();
 			++iter;
 			auto endPtr = iter.operator->();
@@ -219,7 +223,7 @@ namespace jsonifier_internal {
 	};
 
 	template<typename derived_type> struct validate_impl<json_structural_type::Number, derived_type> {
-		template<const validate_options_internal<derived_type>& options, typename iterator_type01> static bool impl(iterator_type01&& iter) {
+		template<const validate_options_internal<derived_type>& options, typename iterator_type> static bool impl(iterator_type&& iter, iterator_type&& end) {
 			auto newPtr = iter.operator->();
 			++iter;
 			auto endPtr = iter.operator->();
@@ -295,29 +299,32 @@ namespace jsonifier_internal {
 	};
 
 	template<typename derived_type> struct validate_impl<json_structural_type::Bool, derived_type> {
-		template<const validate_options_internal<derived_type>& options, typename iterator_type01> static bool impl(iterator_type01&& iter) {
+		template<const validate_options_internal<derived_type>& options, typename iterator_type> static bool impl(iterator_type&& iter, iterator_type&& end) {
 			auto newPtr = iter.operator->();
 			++iter;
 			static constexpr char falseStr[]{ "false" };
 			static constexpr char trueStr[]{ "true" };
 			skipWs(newPtr);
-			if (std::memcmp(newPtr, trueStr, std::strlen(trueStr)) == 0) {
-				newPtr += std::size(trueStr) - 1;
-			} else if (std::memcmp(newPtr, falseStr, std::strlen(falseStr)) == 0) {
-				newPtr += std::size(falseStr) - 1;
+			if (getRemainingLength(iter, end) >= 4) {
+				if (std::memcmp(newPtr, trueStr, std::strlen(trueStr)) == 0) {
+					newPtr += std::strlen(trueStr) - 1;
+				} else if (std::memcmp(newPtr, falseStr, std::strlen(falseStr)) == 0) {
+					newPtr += std::strlen(falseStr) - 1;
+				} else {
+					static constexpr auto sourceLocation{ std::source_location::current() };
+					options.validatorPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Validating, validate_errors::Invalid_Bool_Value>(
+						iter - iter.getRootPtr(), iter.getEndPtr() - iter.getRootPtr(), iter.getRootPtr()));
+					return false;
+				}
 			} else {
-				static constexpr auto sourceLocation{ std::source_location::current() };
-				options.validatorPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Validating, validate_errors::Invalid_Bool_Value>(
-					iter - iter.getRootPtr(), iter.getEndPtr() - iter.getRootPtr(), iter.getRootPtr()));
 				return false;
 			}
-
 			return iter.operator bool();
 		}
 	};
 
 	template<typename derived_type> struct validate_impl<json_structural_type::Null, derived_type> {
-		template<const validate_options_internal<derived_type>& options, typename iterator_type01> static bool impl(iterator_type01&& iter) {
+		template<const validate_options_internal<derived_type>& options, typename iterator_type> static bool impl(iterator_type&& iter, iterator_type&& end) {
 			auto newPtr = iter.operator->();
 			++iter;
 			skipWs(newPtr);

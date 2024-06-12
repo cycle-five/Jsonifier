@@ -330,22 +330,21 @@ namespace jsonifier_internal {
 #define repeat_in_1_18(x) { x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9) x(10) x(11) x(12) x(13) x(14) x(15) x(16) x(17) x(18) }
 	constexpr auto eBit = static_cast<uint8_t>('E' ^ 'e');
 
-	template<typename char_type> inline bool parseFloat(std::floating_point auto& value, char_type*& iter) noexcept {
-		using value_type				   = std::decay_t<decltype(value)>;
-		constexpr auto isVolatile		   = std::is_volatile_v<std::remove_reference_t<decltype(value)>>;
-		char_type* sigCut				   = nullptr;
-		[[maybe_unused]] char_type* sigEnd = nullptr;
-		char_type* dotPos				   = nullptr;
-		uint32_t fracZeros				   = 0;
-		uint64_t sig					   = 0;
-		int32_t exp						   = 0;
+	template<jsonifier::concepts::float_t value_type> inline bool parseFloat(value_type& value, string_view_ptr& iter) noexcept {
+		constexpr auto isVolatile				= std::is_volatile_v<std::remove_reference_t<decltype(value)>>;
+		string_view_ptr sigCut					= nullptr;
+		[[maybe_unused]] string_view_ptr sigEnd = nullptr;
+		string_view_ptr dotPos					= nullptr;
+		uint32_t fracZeros						= 0;
+		uint64_t sig							= 0;
+		int32_t exp								= 0;
 		bool expSign;
 		int32_t expSig = 0;
 		int32_t expLit = 0;
 		uint64_t numTmp;
-		char_type* tmp;
-		char_type* hdr = iter;
-		bool sign	   = (*hdr == '-');
+		string_view_ptr tmp;
+		string_view_ptr hdr = iter;
+		bool sign			= (*hdr == '-');
 		iter += sign;
 		auto applySign = [&](auto&& value) -> value_type {
 			return sign ? -static_cast<value_type>(value) : static_cast<value_type>(value);

@@ -64,15 +64,15 @@ namespace jsonifier_internal {
 
 		using iterator_concept	= std::bidirectional_iterator_tag;
 		using iterator_category = std::bidirectional_iterator_tag;
-		using value_type		= char;
+		using value_type		= const char;
 		using pointer_internal	= structural_index*;
 		using pointer			= value_type*;
 		using size_type			= uint64_t;
 
 		JSONIFIER_INLINE json_structural_iterator() noexcept = default;
 
-		JSONIFIER_INLINE json_structural_iterator(structural_index* startPtr, structural_index* endPtr) noexcept
-			: currentIndex{ startPtr }, rootIndex{ startPtr }, endIndex{ endPtr } {};
+		JSONIFIER_INLINE json_structural_iterator(structural_index* startPtr, structural_index* endPtr, pointer stringViewNew) noexcept
+			: currentIndex{ startPtr }, rootIndex{ startPtr }, endIndex{ endPtr }, stringView{ stringViewNew } {};
 
 		JSONIFIER_INLINE value_type operator*() const {
 			return *currentIndex ? **currentIndex : defaultValue;
@@ -92,7 +92,7 @@ namespace jsonifier_internal {
 			return *this;
 		}
 
-		JSONIFIER_INLINE size_type operator-(const char* other) const {
+		JSONIFIER_INLINE size_type operator-(string_view_ptr other) const {
 			return static_cast<size_type>(*currentIndex - other);
 		}
 
@@ -109,15 +109,19 @@ namespace jsonifier_internal {
 		}
 
 		JSONIFIER_INLINE auto getRootPtr() const {
-			return *rootIndex;
+			return stringView;
 		}
 
-		JSONIFIER_INLINE explicit operator const char*&() const {
+		JSONIFIER_INLINE explicit operator string_view_ptr() const {
 			return *currentIndex;
 		}
 
-		JSONIFIER_INLINE bool operator==(const json_structural_iterator&) const {
-			return *currentIndex == nullptr;
+		JSONIFIER_INLINE bool operator==(const json_structural_iterator& other) const {
+			return *currentIndex == *other.currentIndex;
+		}
+
+		JSONIFIER_INLINE bool operator<=(const json_structural_iterator& other) const {
+			return *currentIndex <= *other.currentIndex;
 		}
 
 		JSONIFIER_INLINE operator bool() const {
@@ -135,6 +139,7 @@ namespace jsonifier_internal {
 		pointer_internal currentIndex{};
 		pointer_internal rootIndex{};
 		pointer_internal endIndex{};
+		pointer stringView{};
 	};
 
 }

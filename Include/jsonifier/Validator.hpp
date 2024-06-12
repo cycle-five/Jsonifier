@@ -67,7 +67,8 @@ namespace jsonifier_internal {
 			derivedRef.errors.clear();
 			derivedRef.index = 0;
 			derivedRef.section.reset(in.data(), in.size());
-			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end() };
+			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end(), in.data() };
+			json_structural_iterator end{ derivedRef.section.end(), derivedRef.section.end(), in.data() };
 			static constexpr validate_options_internal<derived_type> options{};
 			options.validatorPtr = this;
 			if (!iter) {
@@ -76,7 +77,7 @@ namespace jsonifier_internal {
 					iter.getEndPtr() - iter.getRootPtr(), iter.getRootPtr()));
 				return false;
 			}
-			auto result = impl<options>(iter, derivedRef.index);
+			auto result = impl<options>(iter, end, derivedRef.index);
 			if (derivedRef.index > 0 || iter.operator bool() || derivedRef.errors.size() > 0) {
 				result = false;
 			}
@@ -88,19 +89,20 @@ namespace jsonifier_internal {
 
 		JSONIFIER_INLINE validator() noexcept : derivedRef{ initializeSelfRef() } {};
 
-		template<const validate_options_internal<derived_type>& options, typename iterator_type> JSONIFIER_INLINE static bool impl(iterator_type&& iter, uint64_t& depth) {
+		template<const validate_options_internal<derived_type>& options, typename iterator_type>
+		JSONIFIER_INLINE static bool impl(iterator_type&& iter, iterator_type&& end, uint64_t& depth) {
 			if (*iter == '{') {
-				return validate_impl<json_structural_type::Object_Start, derived_type>::template impl<options>(iter, depth);
+				return validate_impl<json_structural_type::Object_Start, derived_type>::template impl<options>(iter, end, depth);
 			} else if (*iter == '[') {
-				return validate_impl<json_structural_type::Array_Start, derived_type>::template impl<options>(iter, depth);
+				return validate_impl<json_structural_type::Array_Start, derived_type>::template impl<options>(iter, end, depth);
 			} else if (*iter == '"') {
-				return validate_impl<json_structural_type::String, derived_type>::template impl<options>(iter);
+				return validate_impl<json_structural_type::String, derived_type>::template impl<options>(iter, end);
 			} else if (numberTable[static_cast<uint64_t>(*iter)]) {
-				return validate_impl<json_structural_type::Number, derived_type>::template impl<options>(iter);
+				return validate_impl<json_structural_type::Number, derived_type>::template impl<options>(iter, end);
 			} else if (boolTable[static_cast<uint64_t>(*iter)]) {
-				return validate_impl<json_structural_type::Bool, derived_type>::template impl<options>(iter);
+				return validate_impl<json_structural_type::Bool, derived_type>::template impl<options>(iter, end);
 			} else if (*iter == 'n') {
-				return validate_impl<json_structural_type::Null, derived_type>::template impl<options>(iter);
+				return validate_impl<json_structural_type::Null, derived_type>::template impl<options>(iter, end);
 			} else {
 				return false;
 			}

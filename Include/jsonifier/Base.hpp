@@ -208,7 +208,7 @@ constexpr uint64_t SixtyFourBitsPerStep{ BitsPerStep / 64 };
 constexpr uint64_t StridesPerStep{ BitsPerStep / BytesPerStep };
 
 using string_view_ptr	= const char*;
-using structural_index	= const char*;
+using structural_index	= string_view_ptr;
 using string_buffer_ptr = char*;
 
 template<typename value_type>
@@ -226,6 +226,7 @@ concept simd_int_128_type = std::is_same_v<simd_int_128, jsonifier::concepts::un
 #include <jsonifier/ISA/AVX.hpp>
 #include <jsonifier/ISA/Fallback.hpp>
 #include <jsonifier/ISA/CollectIndices.hpp>
+#include <sstream>
 #include <iostream>
 #include <string>
 #include <atomic>

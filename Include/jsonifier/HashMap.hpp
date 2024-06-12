@@ -36,7 +36,7 @@
 
 namespace jsonifier_internal {
 
-	constexpr size_t naiveMapMaxSize = 32;
+	constexpr size_t naiveMapMaxSize = 16;
 
 	struct naive_map_desc {
 		size_t N{};
@@ -317,173 +317,202 @@ namespace jsonifier_internal {
 		return ht;
 	}
 
-	template<uint64_t N> consteval auto fitUnsignedType() noexcept {
-		if constexpr (N <= (std::numeric_limits<uint8_t>::max)()) {
-			return uint8_t{};
-		} else if constexpr (N <= (std::numeric_limits<uint16_t>::max)()) {
-			return uint16_t{};
-		} else if constexpr (N <= (std::numeric_limits<uint32_t>::max)()) {
-			return uint32_t{};
-		} else if constexpr (N <= (std::numeric_limits<uint64_t>::max)()) {
-			return uint64_t{};
-		} else {
-			return;
-		}
-	}
+	template<uint64_t N> using fit_unsigned_t = std::conditional_t<N <= std::numeric_limits<uint8_t>::max(), uint8_t,
+		std::conditional_t<N <= std::numeric_limits<uint16_t>::max(), uint16_t,
+			std::conditional_t<N <= std::numeric_limits<uint32_t>::max(), uint32_t, std::conditional_t<N <= std::numeric_limits<uint64_t>::max(), uint64_t, void>>>>;
 
-	template<typename Key, typename Value, size_t N> struct normal_map {
-		static constexpr uint64_t storageSize = std::bit_ceil(N) * (N < 32 ? 2 : 1);
-		static constexpr auto maxBucketSize	  = 2 * std::bit_width(N);
-		using hash_alg						  = naive_hash;
+	struct rt_group {
+		using index_type = std::array<uint8_t, 16>;
+		mutable std::array<uint8_t, 16> indices{};
+		mutable uint8_t indexCount{};
+
+		JSONIFIER_INLINE void extractIndices(uint32_t value) {
+			while (value != 0) {
+				auto idx = simd_internal::tzcnt(value);
+				assert(indexCount < indices.size());
+				indices[indexCount++] = idx;
+				value				  = simd_internal::blsr(value);
+			}
+		}
+
+		JSONIFIER_INLINE auto begin() {
+			return const_iterator<uint8_t>{ indices.data() };
+		}
+
+		JSONIFIER_INLINE auto end() {
+			return const_iterator<uint8_t>{ indices.data() + indexCount };
+		}
+
+		JSONIFIER_INLINE bool matchEmpty() {
+			return indexCount == 0;
+		}
+
+		JSONIFIER_INLINE auto& match(const uint8_t* controlBytes, uint8_t hash) {
+			extractIndices(simd_internal::opCmpEq(simd_internal::gatherValue<simd_int_128>(hash), simd_internal::gatherValues<simd_int_128>(controlBytes)));
+			return indices;
+		}
+	};
+
+	struct ct_group {
+		using index_type = std::array<uint8_t, 16>;
+		std::array<uint8_t, 16> indices{};
+		uint8_t indexCount{};
+
+		constexpr auto extractIndices(uint32_t value) {
+			while (value != 0) {
+				auto idx = tzcnt(value);
+				assert(indexCount < indices.size());
+				indices[indexCount++] = idx;
+				value				  = blsr(value);
+			}
+			return indices;
+		}
+
+		constexpr auto& match(const uint8_t* controlBytes, uint8_t hash) {
+			uint32_t mask = 0;
+			for (int32_t i = 0; i < 16; ++i) {
+				if (controlBytes[i] == hash) {
+					mask |= (1 << i);
+				}
+			}
+			extractIndices(mask);
+			return indices;
+		}
+
+		constexpr ct_group(const uint8_t* controlBytes, uint8_t hash) {
+			match(controlBytes, hash);
+		}
+
+		constexpr int32_t tzcnt(uint32_t value) const {
+			int32_t count = 0;
+			while ((value & 1) == 0 && value != 0) {
+				value >>= 1;
+				++count;
+			}
+			return count;
+		}
+
+		constexpr uint32_t blsr(uint32_t value) const {
+			return value & (value - 1);
+		}
+
+		constexpr auto begin() const {
+			return const_iterator<uint8_t>{ indices.data() };
+		}
+
+		constexpr auto end() const {
+			return const_iterator<uint8_t>{ indices.data() + indexCount };
+		}
+
+		constexpr bool matchEmpty() const {
+			return indexCount == 0;
+		}
+	};
+
+	template<typename key_type, typename value_type, size_t N> struct simd_map : public fnv1a_hash {
+		static constexpr uint64_t storageSize = roundUpToMultiple<16ull, uint64_t>(N);
+		static constexpr auto maxBucketSize	  = 16;
+		static constexpr uint64_t numGroups	  = (storageSize / 16) + (storageSize % 16 != 0 ? 1 : 0);
 		uint64_t seed{};
-		std::array<int64_t, N> buckets{};
-		using storage_type = decltype(fitUnsignedType<N>());
-		std::array<storage_type, storageSize> table{};
-		std::array<std::pair<Key, Value>, N> items{};
-		std::array<uint64_t, N + 1> hashes{};
+		using storage_type = fit_unsigned_t<storageSize>;
+		using hasher	   = fnv1a_hash;
+		std::array<std::pair<key_type, value_type>, storageSize> items{};
+		std::array<uint8_t, storageSize> controlBytes{};
+		mutable rt_group grp{};
 
-		constexpr decltype(auto) begin() const noexcept {
+		constexpr auto begin() const noexcept {
 			return items.begin();
 		}
-		constexpr decltype(auto) end() const noexcept {
-			return items.end();
-		}
 
-		constexpr decltype(auto) begin() noexcept {
-			return items.begin();
-		}
-		constexpr decltype(auto) end() noexcept {
+		constexpr auto end() const noexcept {
 			return items.end();
 		}
 
 		constexpr size_t size() const noexcept {
-			return items.size();
+			return N;
 		}
 
-		constexpr size_t index(auto&& key) const noexcept {
-			return find(key) - begin();
-		}
+		constexpr auto find(const key_type& key) const noexcept {
+			if (std::is_constant_evaluated()) {
+				auto hash			 = fnv1a_hash::operator()(key.data(), key.size(), seed);
+				size_t groupPos		 = H1(hash) % numGroups;
+				size_t startGroupPos = groupPos;
+				ct_group grp{ controlBytes.data() + groupPos * 16, H2(hash) };
+				do {
+					for (auto iter = grp.begin(); iter != grp.end(); ++iter) {
+						if (key == items[groupPos * 16 + *iter].first) {
+							return items.begin() + groupPos * 16 + *iter;
+						}
+					}
+					groupPos = (groupPos + 1) % numGroups;
+				} while (groupPos != startGroupPos);
 
-		constexpr decltype(auto) find(auto&& key) const noexcept {
-			auto hash		   = hash_alg{}(key, seed);
-			auto extra		   = buckets[hash % N];
-			const size_t index = extra < 1 ? -extra : table[combine(hash, extra) % storageSize];
-			if constexpr (!std::integral<Key>) {
-				if (hashes[index] != hash) [[unlikely]]
-					return items.end();
+				return items.end();
+
 			} else {
-				if (index >= N) [[unlikely]] {
-					return items.end();
-				}
-				auto& item = items[index];
-				if constexpr (std::integral<Key>) {
-					if (item.first != key) [[unlikely]]
-						return items.end();
-				} else {
-					if (item.first != key) [[unlikely]]
-						return items.end();
-				}
+				auto hash			 = fnv1a_hash::operator()(key.data(), key.size(), seed);
+				size_t groupPos		 = H1(hash) % numGroups;
+				size_t startGroupPos = groupPos;
+				do {
+					grp.match(controlBytes.data() + groupPos * 16, H2(hash));
+					for (auto iter = grp.begin(); iter != grp.end(); ++iter) {
+						if (key == items[groupPos * 16 + *iter].first) {
+							return items.begin() + groupPos * 16 + *iter;
+						}
+					}
+					groupPos = (groupPos + 1) % numGroups;
+				} while (groupPos != startGroupPos);
+
+				return items.end();
 			}
-			return items.begin() + index;
 		}
 
-		constexpr decltype(auto) find(auto&& key) noexcept {
-			auto hash		   = hash_alg{}(key, seed);
-			auto extra		   = buckets[hash % N];
-			const size_t index = extra < 1 ? -extra : table[combine(hash, extra) % storageSize];
-			if constexpr (!std::integral<Key>) {
-				if (hashes[index] != hash) [[unlikely]]
-					return items.end();
-			} else {
-				if (index >= N) [[unlikely]] {
-					return items.end();
-				}
-				auto& item = items[index];
-				if constexpr (std::integral<Key>) {
-					if (item.first != key) [[unlikely]]
-						return items.end();
-				} else {
-					if (item.first != key) [[unlikely]]
-						return items.end();
-				}
-			}
-			return items.begin() + index;
-		}
-
-		explicit constexpr normal_map(const std::array<std::pair<Key, Value>, N>& pairs) : items(pairs) {
-			findPerfectHash();
-		}
-
-		static constexpr uint64_t combine(uint64_t a, uint64_t b) {
-			return hash_alg::bitmix(a ^ b);
-		}
-
-		constexpr void findPerfectHash() noexcept {
+		constexpr simd_map(const std::array<std::pair<key_type, value_type>, N>& pairs) : items{}, controlBytes{} {
 			if constexpr (N == 0) {
 				return;
 			}
 
-			std::array<std::array<storage_type, maxBucketSize>, N> fullBuckets{};
-			std::array<size_t, N> bucketSizes{};
+			std::array<size_t, numGroups> bucketSizes{};
 			naive_prng gen{};
+			seed = gen();
 
-			bool failed;
+			bool failed{};
 			do {
+				for (auto& controlByte: controlBytes) {
+					controlByte = -1;
+				}
+				std::fill(items.data(), items.data() + items.size(), std::pair<key_type, value_type>{});
 				failed = false;
-				seed   = gen() + 1;
-				for (storage_type i{}; i < N; ++i) {
-					auto hash = hash_alg{}(items[i].first, seed);
-					if (hash == seed) {
-						failed = true;
+				for (size_t i = 0; i < N; ++i) {
+					const auto hash		  = fnv1a_hash::operator()(pairs[i].first.data(), pairs[i].first.size(), seed);
+					const auto groupPos	  = H1(hash) % numGroups;
+					const auto bucketSize = bucketSizes[groupPos]++;
+
+					if (controlBytes[i] != -1) {
+						failed				  = true;
+						bucketSizes[groupPos] = 0;
+						seed				  = gen();
 						break;
 					}
-					hashes[i]		= hash;
-					auto bucket		= hash % N;
-					auto bucketSize = bucketSizes[bucket]++;
-					if (bucketSize == maxBucketSize) {
-						failed		= true;
-						bucketSizes = {};
+					if (bucketSize >= maxBucketSize) {
+						failed				  = true;
+						bucketSizes[groupPos] = 0;
+						seed				  = gen();
 						break;
 					} else {
-						fullBuckets[bucket][bucketSize] = i;
+						controlBytes[i] = H2(hash);
+						items[i]		= pairs[i];
 					}
 				}
 			} while (failed);
+		}
 
-			std::array<size_t, N> bucketIndex{};
-			std::iota(bucketIndex.begin(), bucketIndex.end(), 0);
-			std::sort(bucketIndex.begin(), bucketIndex.end(), [&bucketSizes](size_t i1, size_t i2) {
-				return bucketSizes[i1] > bucketSizes[i2];
-			});
+		static constexpr size_t H1(size_t hash) noexcept {
+			return hash >> 7;
+		}
 
-			constexpr auto unkownKeyIndice = N;
-			std::fill(table.begin(), table.end(), storage_type(unkownKeyIndice));
-			for (auto bucketIndex: bucketIndex) {
-				auto bucketSize = bucketSizes[bucketIndex];
-				if (bucketSize < 1)
-					break;
-				if (bucketSize == 1) {
-					buckets[bucketIndex] = -int64_t(fullBuckets[bucketIndex][0]);
-					continue;
-				}
-				auto table_old = table;
-				do {
-					failed			   = false;
-					auto secondarySeed = gen() >> 1;
-					for (size_t i = 0; i < bucketSize; ++i) {
-						auto index = fullBuckets[bucketIndex][i];
-						auto hash  = hashes[index];
-						auto slot  = combine(hash, secondarySeed) % storageSize;
-						if (table[slot] != unkownKeyIndice) {
-							failed = true;
-							table  = table_old;
-							break;
-						}
-						table[slot] = index;
-					}
-					buckets[bucketIndex] = secondarySeed;
-				} while (failed);
-			}
+		static constexpr uint8_t H2(size_t hash) noexcept {
+			return static_cast<uint8_t>(hash & 0xFF);
 		}
 	};
 
@@ -736,7 +765,7 @@ namespace jsonifier_internal {
 			return micro_map1<value_t, core_sv<value_type, I>::value...>{ keyValue<value_type, I>()... };
 		} else if constexpr (n == 2) {
 			return micro_map2<value_t, core_sv<value_type, I>::value...>{ keyValue<value_type, I>()... };
-		} else if constexpr (n < 64) {
+		} else if constexpr (n < 16) {
 			constexpr std::array<jsonifier::string_view, n> keys{ getKey<value_type, I>()... };
 			constexpr auto front_desc = singleCharHash<n>(keys);
 
@@ -755,17 +784,17 @@ namespace jsonifier_internal {
 					if constexpr (sum_desc.valid) {
 						return makeSingleCharMap<value_t, sum_desc>({ keyValue<value_type, I>()... });
 					} else {
-						if constexpr (n <= naiveMapMaxSize) {
+						if constexpr (n < naiveMapMaxSize) {
 							constexpr auto naive_desc = naiveMapHash<n>(keys);
 							return makeNaiveMap<value_t, naive_desc>({ keyValue<value_type, I>()... });
 						} else {
-							return normal_map<jsonifier::string_view, value_t, n>({ keyValue<value_type, I>()... });
+							return simd_map<jsonifier::string_view, value_t, n>({ keyValue<value_type, I>()... });
 						}
 					}
 				}
 			}
 		} else {
-			return normal_map<jsonifier::string_view, value_t, n>({ keyValue<value_type, I>()... });
+			return simd_map<jsonifier::string_view, value_t, n>({ keyValue<value_type, I>()... });
 		}
 	}
 

@@ -480,7 +480,7 @@ namespace jsonifier_internal {
 	}
 
 	template<const auto& options, typename value_type, json_structural_iterator_t iterator_type>
-	JSONIFIER_INLINE jsonifier::string_view parseKey(iterator_type&& iter, iterator_type&& end) {
+	JSONIFIER_INLINE jsonifier::string_view parseKey(iterator_type&& iter, iterator_type&&) {
 		auto start{ iter.operator->() };
 
 		if (*iter != '"') [[unlikely]] {

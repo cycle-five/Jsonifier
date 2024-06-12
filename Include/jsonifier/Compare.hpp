@@ -27,19 +27,19 @@
 
 namespace jsonifier_internal {
 
-	template<const uint8_t repeat, jsonifier::concepts::uint16_type return_type> constexpr return_type repeatByte() {
+	template<auto repeat, jsonifier::concepts::uint16_type return_type> constexpr return_type repeatByte() {
 		return 0x0101ull * repeat;
 	}
 
-	template<const uint8_t repeat, jsonifier::concepts::uint32_type return_type> constexpr return_type repeatByte() {
+	template<auto repeat, jsonifier::concepts::uint32_type return_type> constexpr return_type repeatByte() {
 		return 0x01010101ull * repeat;
 	}
 
-	template<const uint8_t repeat, jsonifier::concepts::uint64_type return_type> constexpr return_type repeatByte() {
+	template<auto repeat, jsonifier::concepts::uint64_type return_type> constexpr return_type repeatByte() {
 		return 0x0101010101010101ull * repeat;
 	}
 
-	template<auto value, typename char_type> JSONIFIER_INLINE void memchar(char_type*& data, size_t lengthNew) {
+	template<auto value> JSONIFIER_INLINE void memchar(string_view_ptr& data, size_t lengthNew) {
 #if JSONIFIER_CHECK_FOR_AVX(JSONIFIER_AVX512)
 		{
 			using simd_type						 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 2>::type::type;
@@ -167,7 +167,7 @@ namespace jsonifier_internal {
 		data = nullptr;
 	}
 
-	template<typename char_type01, typename char_type02> JSONIFIER_INLINE bool compare(char_type01* lhs, char_type02* rhs, uint64_t lengthNew) {
+	JSONIFIER_INLINE bool compare(string_view_ptr lhs, string_view_ptr rhs, uint64_t lengthNew) {
 #if JSONIFIER_CHECK_FOR_AVX(JSONIFIER_AVX512)
 		{
 			using simd_type						 = typename jsonifier::concepts::get_type_at_index<simd_internal::avx_list, 2>::type::type;
@@ -281,7 +281,7 @@ namespace jsonifier_internal {
 		return true;
 	}
 
-	template<uint64_t Count, typename char_type01, typename char_type02> JSONIFIER_INLINE bool compare(char_type01* lhs, char_type02* rhs) noexcept {
+	template<uint64_t Count> JSONIFIER_INLINE bool compare(string_view_ptr lhs, string_view_ptr rhs) noexcept {
 		static constexpr uint64_t size{ 8 };
 		if constexpr (Count > size) {
 			static constexpr uint64_t size{ sizeof(uint64_t) };

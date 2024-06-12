@@ -66,23 +66,23 @@ namespace jsonifier_internal {
 
 		template<jsonifier::prettify_options options = jsonifier::prettify_options{}, jsonifier ::concepts::string_t string_type>
 		JSONIFIER_INLINE auto prettifyJson(string_type&& in) noexcept {
-			if (derivedRef.stringBuffer.size() < in.size() * 5) [[unlikely]] {
-				derivedRef.stringBuffer.resize(in.size() * 5);
+			if (derivedRef.stringBuffer.size() < in.size() * 6) [[unlikely]] {
+				derivedRef.stringBuffer.resize(in.size() * 6);
 			}
 			static constexpr prettify_options_internal<derived_type> optionsFinal{ .optionsReal = options };
 			derivedRef.index = 0;
 			derivedRef.errors.clear();
 			derivedRef.section.reset(in.data(), in.size());
-			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end() };
-			json_structural_iterator end{ derivedRef.section.end(), derivedRef.section.end() };
+			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end(), in.data() };
+			json_structural_iterator end{ derivedRef.section.end(), derivedRef.section.end(), in.data() };
 			if (!iter) {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				getErrors().emplace_back(
-					error::constructError<sourceLocation, error_classes::Prettifying, prettify_errors::No_Input>(iter - iter, end - iter, static_cast<const char*>(iter)));
+					error::constructError<sourceLocation, error_classes::Prettifying, prettify_errors::No_Input>(iter - iter, end - iter, static_cast<string_view_ptr>(iter)));
 				return jsonifier::concepts::unwrap_t<string_type>{};
 			}
 			jsonifier::concepts::unwrap_t<string_type> newString{};
-			prettify_impl<derived_type>::template impl<optionsFinal>(iter, derivedRef.stringBuffer, derivedRef.index);
+			prettify_impl<derived_type>::template impl<optionsFinal>(iter, end, derivedRef.stringBuffer, derivedRef.index);
 			if (derivedRef.index < std::numeric_limits<uint32_t>::max()) {
 				newString.resize(derivedRef.index);
 				std::copy(derivedRef.stringBuffer.data(), derivedRef.stringBuffer.data() + derivedRef.index, newString.data());
@@ -94,22 +94,22 @@ namespace jsonifier_internal {
 
 		template<jsonifier::prettify_options options = jsonifier::prettify_options{}, jsonifier::concepts::string_t string_type01, jsonifier::concepts::string_t string_type02>
 		JSONIFIER_INLINE bool prettifyJson(string_type01&& in, string_type02&& buffer) noexcept {
-			if (derivedRef.stringBuffer.size() < in.size() * 5) [[unlikely]] {
-				derivedRef.stringBuffer.resize(in.size() * 5);
+			if (derivedRef.stringBuffer.size() < in.size() * 6) [[unlikely]] {
+				derivedRef.stringBuffer.resize(in.size() * 6);
 			}
 			static constexpr prettify_options_internal<derived_type> optionsFinal{ .optionsReal = options };
 			derivedRef.index = 0;
 			derivedRef.errors.clear();
 			derivedRef.section.reset(in.data(), in.size());
-			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end() };
-			json_structural_iterator end{ derivedRef.section.end(), derivedRef.section.end() };
+			json_structural_iterator iter{ derivedRef.section.begin(), derivedRef.section.end(), in.data() };
+			json_structural_iterator end{ derivedRef.section.end(), derivedRef.section.end(), in.data() };
 			if (!iter) {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				getErrors().emplace_back(
-					error::constructError<sourceLocation, error_classes::Prettifying, prettify_errors::No_Input>(iter - iter, end - iter, static_cast<const char*>(iter)));
+					error::constructError<sourceLocation, error_classes::Prettifying, prettify_errors::No_Input>(iter - iter, end - iter, static_cast<string_view_ptr>(iter)));
 				return false;
 			}
-			prettify_impl<derived_type>::template impl<optionsFinal>(iter, derivedRef.stringBuffer, derivedRef.index);
+			prettify_impl<derived_type>::template impl<optionsFinal>(iter, end, derivedRef.stringBuffer, derivedRef.index);
 			if (derivedRef.index < std::numeric_limits<uint32_t>::max()) {
 				if (buffer.size() != derivedRef.index) {
 					buffer.resize(derivedRef.index);

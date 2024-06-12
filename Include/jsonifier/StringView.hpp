@@ -305,7 +305,7 @@ namespace jsonifier {
 		return oStream;
 	}
 
-	[[nodiscard]] constexpr string_view operator""_sv(const char* stringNew, size_t lengthNew) noexcept {
+	[[nodiscard]] constexpr string_view operator""_sv(string_view_ptr stringNew, size_t lengthNew) noexcept {
 		return string_view(stringNew, lengthNew);
 	}
 
