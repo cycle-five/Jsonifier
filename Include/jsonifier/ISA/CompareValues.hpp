@@ -25,7 +25,7 @@
 
 #include <jsonifier/ISA/Fallback.hpp>
 #include <jsonifier/ISA/Neon.hpp>
-#include <jsonifier/Base.hpp>
+#include <jsonifier/TypeEntities.hpp>
 
 namespace simd_internal {
 

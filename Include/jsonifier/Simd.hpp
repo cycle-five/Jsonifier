@@ -24,7 +24,7 @@
 #pragma once
 
 #include <jsonifier/JsonStructuralIterator.hpp>
-#include <jsonifier/ISADetection.hpp>
+#include <jsonifier/Base.hpp>
 #include <jsonifier/StringView.hpp>
 #include <sstream>
 #include <cmath>

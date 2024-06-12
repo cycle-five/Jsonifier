@@ -25,7 +25,7 @@
 #pragma once
 
 #include <jsonifier/Allocator.hpp>
-#include <jsonifier/ISADetection.hpp>
+#include <jsonifier/Base.hpp>
 #include <jsonifier/Error.hpp>
 #include <jsonifier/StrToD.hpp>
 #include <jsonifier/Simd.hpp>

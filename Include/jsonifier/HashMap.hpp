@@ -29,7 +29,7 @@
 #include <jsonifier/Reflection.hpp>
 #include <jsonifier/Error.hpp>
 #include <jsonifier/Tuple.hpp>
-#include <jsonifier/ISADetection.hpp>
+#include <jsonifier/Base.hpp>
 #include <algorithm>
 #include <numeric>
 #include <span>

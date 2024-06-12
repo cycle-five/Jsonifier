@@ -25,7 +25,7 @@
 
 #include <jsonifier/JsonStructuralIterator.hpp>
 #include <jsonifier/Error.hpp>
-#include <jsonifier/ISADetection.hpp>
+#include <jsonifier/Base.hpp>
 
 namespace jsonifier_internal {
 

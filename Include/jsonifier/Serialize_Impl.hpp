@@ -25,7 +25,7 @@
 
 #include <jsonifier/Serializer.hpp>
 #include <jsonifier/Parser.hpp>
-#include <jsonifier/ISADetection.hpp>
+#include <jsonifier/Base.hpp>
 #include <algorithm>
 
 namespace jsonifier_internal {

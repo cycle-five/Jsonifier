@@ -27,7 +27,7 @@
 #include <jsonifier/StringUtils.hpp>
 #include <jsonifier/Derailleur.hpp>
 #include <jsonifier/Parser.hpp>
-#include <jsonifier/ISADetection.hpp>
+#include <jsonifier/Base.hpp>
 #include <memory>
 
 namespace jsonifier_internal {

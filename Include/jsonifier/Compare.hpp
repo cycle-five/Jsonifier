@@ -23,7 +23,7 @@
 /// Feb 3, 2023
 #pragma once
 
-#include <jsonifier/ISADetection.hpp>
+#include <jsonifier/TypeEntities.hpp>
 
 namespace jsonifier_internal {
 
