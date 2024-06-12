@@ -111,12 +111,13 @@ namespace jsonifier_internal {
 
 	template<const auto& options, typename value_type, jsonifier_internal::json_structural_iterator_t iterator_type>
 	JSONIFIER_INLINE void parseNumber(value_type&& value, iterator_type&& iter, iterator_type&& end) {
-		using V = std::decay_t<value_type>;
+		auto newPtr = iter.operator->();
+		using V		= std::decay_t<value_type>;
 		if constexpr (jsonifier::concepts::integer_t<V>) {
 			static constexpr auto maximum = uint64_t((std::numeric_limits<V>::max)());
 			if constexpr (std::is_unsigned_v<V>) {
 				if constexpr (std::same_as<V, uint64_t>) {
-					if (*iter == '-') [[unlikely]] {
+					if (*newPtr == '-') [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
 						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
 							iter - options.rootIter, end - options.rootIter, options.rootIter));
@@ -124,8 +125,8 @@ namespace jsonifier_internal {
 						return;
 					}
 
-					static_assert(sizeof(*iter) == sizeof(char));
-					auto s = parseInt<decltype(value)>(value, iter.operator const char*&());
+					static_assert(sizeof(*newPtr) == sizeof(char));
+					auto s = parseInt<decltype(value)>(value, newPtr);
 					++iter;
 					if (!s) [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
@@ -136,7 +137,7 @@ namespace jsonifier_internal {
 					}
 				} else {
 					uint64_t i{};
-					if (*iter == '-') [[unlikely]] {
+					if (*newPtr == '-') [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
 						options.parserPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Parsing, parse_errors::Invalid_Number_Value>(
 							iter - options.rootIter, end - options.rootIter, options.rootIter));
@@ -144,8 +145,8 @@ namespace jsonifier_internal {
 						return;
 					}
 
-					static_assert(sizeof(*iter) == sizeof(char));
-					auto s = parseInt<uint64_t>(i, iter.operator const char*&());
+					static_assert(sizeof(*newPtr) == sizeof(char));
+					auto s = parseInt<uint64_t>(i, newPtr);
 					++iter;
 					if (!s) [[unlikely]] {
 						static constexpr auto sourceLocation{ std::source_location::current() };
@@ -167,13 +168,12 @@ namespace jsonifier_internal {
 			} else {
 				uint64_t i{};
 				int32_t sign = 1;
-				auto newPtr	 = iter.operator const char*&();
 				if (*newPtr == '-') {
 					sign = -1;
 					++newPtr;
 				}
 
-				static_assert(sizeof(*iter) == sizeof(char));
+				static_assert(sizeof(*newPtr) == sizeof(char));
 				auto s = parseInt<uint64_t>(i, newPtr);
 				++iter;
 				if (!s) [[unlikely]] {
@@ -206,7 +206,7 @@ namespace jsonifier_internal {
 				}
 			}
 		} else {
-			auto s = parseFloat(value, iter.operator const char*&());
+			auto s = parseFloat(value, newPtr);
 			++iter;
 			if (!s) [[unlikely]] {
 				static constexpr auto sourceLocation{ std::source_location::current() };

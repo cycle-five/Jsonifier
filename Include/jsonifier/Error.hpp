@@ -158,30 +158,30 @@ namespace jsonifier_internal {
 
 			using V = std::decay_t<decltype(errorString[0])>;
 
-			const auto start		 = std::begin(errorString) + static_cast<int64_t>(errorIndex);
-			line					 = static_cast<uint64_t>(std::count(std::begin(errorString), start, static_cast<V>('\n')) + 1ll);
-			const auto rstart		 = std::rbegin(errorString) + static_cast<int64_t>(errorString.size()) - static_cast<int64_t>(errorIndex) - 1ll;
+			const auto start	   = std::begin(errorString) + static_cast<int64_t>(errorIndex);
+			line				   = static_cast<uint64_t>(std::count(std::begin(errorString), start, static_cast<V>('\n')) + 1ll);
+			const auto rstart	   = std::rbegin(errorString) + static_cast<int64_t>(errorString.size()) - static_cast<int64_t>(errorIndex) - 1ll;
 			const auto prevNewLine = std::find(std::min(rstart, std::rend(errorString)), std::rend(errorString), static_cast<V>('\n'));
-			localIndex				 = static_cast<uint64_t>(std::distance(rstart, prevNewLine));
+			localIndex			   = static_cast<uint64_t>(std::distance(rstart, prevNewLine));
 			const auto nextNewLine = std::find(std::min(start + 1, std::end(errorString)), std::end(errorString), static_cast<V>('\n'));
 
-			const auto offset  = (prevNewLine == std::rend(errorString) ? 0ll : static_cast<int64_t>(errorIndex) - static_cast<int64_t>(localIndex) + 1ll);
+			const auto offset = (prevNewLine == std::rend(errorString) ? 0ll : static_cast<int64_t>(errorIndex) - static_cast<int64_t>(localIndex) + 1ll);
 			auto contextBegin = std::begin(errorString) + offset;
-			auto contextEnd   = nextNewLine;
+			auto contextEnd	  = nextNewLine;
 
 			size_t frontTruncation = 0;
-			size_t rearTruncation	= 0;
+			size_t rearTruncation  = 0;
 
 			if (std::distance(contextBegin, contextEnd) > 64) {
 				if (localIndex <= 32) {
 					rearTruncation = 64;
-					contextEnd		= contextBegin + rearTruncation;
+					contextEnd	   = contextBegin + rearTruncation;
 				} else {
 					frontTruncation = localIndex;
 					contextBegin += frontTruncation;
 					if (std::distance(contextBegin, contextEnd) > 64) {
 						rearTruncation = frontTruncation + 64;
-						contextEnd		= std::begin(errorString) + offset + rearTruncation;
+						contextEnd	   = std::begin(errorString) + offset + rearTruncation;
 					}
 				}
 			}

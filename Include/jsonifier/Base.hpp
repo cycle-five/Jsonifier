@@ -175,14 +175,14 @@ union __m128x {
 	uint32_t m128x_uint32[4];
 	uint64_t m128x_uint64[2];
 	#elif JSONIFIER_MAC
-	int8_t m128x_int8[16];
-	int16_t m128x_int16[8];
-	int32_t m128x_int32[4];
-	int64_t m128x_int64[2];
 	uint8_t m128x_uint8[16];
 	uint16_t m128x_uint16[8];
 	uint32_t m128x_uint32[4];
 	uint64_t m128x_uint64[2];
+	int8_t m128x_int8[16];
+	int16_t m128x_int16[8];
+	int32_t m128x_int32[4];
+	int64_t m128x_int64[2];
 	#else
 	int64_t m128x_int64[2];
 	uint8_t m128x_uint8[16];
