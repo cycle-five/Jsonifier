@@ -23,15 +23,11 @@
 /// Feb 3, 2023
 #pragma once
 
-#include <jsonifier/Base.hpp>
+#include <jsonifier/TypeEntities.hpp>
 
 namespace simd_internal {
 
 #if JSONIFIER_CHECK_FOR_INSTRUCTION(JSONIFIER_BMI) || JSONIFIER_CHECK_FOR_INSTRUCTION(JSONIFIER_ANY_AVX)
-
-	template<jsonifier::concepts::uint16_type value_type> JSONIFIER_INLINE value_type blsr(value_type value) {
-		return _blsr_u32(static_cast<uint32_t>(value));
-	}
 
 	template<jsonifier::concepts::uint32_type value_type> JSONIFIER_INLINE value_type blsr(value_type value) {
 		return _blsr_u32(value);

@@ -341,7 +341,7 @@ namespace jsonifier_internal {
 		1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 1u, 0u, 0u,
 		0u, 0u, 0u, 0u, 0u, 0u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
 
-	JSONIFIER_INLINE char* writeU64Len15To17Trim(char* buf, uint64_t sig) noexcept {
+	template<typename char_type> JSONIFIER_INLINE char_type* writeU64Len15To17Trim(char_type* buf, uint64_t sig) noexcept {
 		uint32_t tz1, tz2, tz;
 
 		uint32_t abbccddee = uint32_t(sig / 100000000);
@@ -353,7 +353,7 @@ namespace jsonifier_internal {
 		uint32_t bb		   = abb - a * 100;
 		uint32_t cc		   = abbcc - abb * 100;
 
-		buf[0] = char(a + 0x30u);
+		buf[0] = char_type(a + 0x30u);
 		buf += a > 0;
 		bool lz = bb < 10 && a == 0;
 		std::memcpy(buf, charTable + (bb * 2 + lz), 2);
@@ -413,7 +413,7 @@ namespace jsonifier_internal {
 		return x < 2 ? x : 1 + numbits<(x >> 1)>();
 	}
 
-	template<std::floating_point value_type> JSONIFIER_INLINE char* toChars(char* buffer, value_type value) noexcept {
+	template<std::floating_point value_type, typename char_type> JSONIFIER_INLINE char_type* toChars(char_type* buffer, value_type value) noexcept {
 		static_assert(std::numeric_limits<value_type>::is_iec559);
 		static_assert(std::numeric_limits<value_type>::radix == 2);
 		static_assert(std::is_same_v<float, value_type> || std::is_same_v<double, value_type>);
@@ -498,7 +498,7 @@ namespace jsonifier_internal {
 				} else {
 					const uint32_t hi = (uint32_t(expDec) * 656) >> 16;
 					const uint32_t lo = uint32_t(expDec) - hi * 100;
-					buffer[0]		  = char(hi) + char(0x30);
+					buffer[0]		  = char_type(hi) + char_type(0x30);
 					std::memcpy(&buffer[1], charTable + (lo * 2), 2);
 					return buffer + 3;
 				}

@@ -47,7 +47,7 @@ namespace jsonifier_internal {
 
 			static constexpr auto memberCount = std::tuple_size_v<jsonifier::concepts::core_t<value_type>>;
 			if constexpr (memberCount > 0) {
-				static decltype(auto) frozenMap{ makeMap<value_type>() };
+				static constexpr decltype(auto) frozenMap{ makeMap<value_type>() };
 
 				bool first = true;
 				while (iter != end) {
@@ -379,9 +379,6 @@ namespace jsonifier_internal {
 	template<typename derived_type, jsonifier::concepts::unique_ptr_t value_type_new> struct parse_impl<derived_type, value_type_new> {
 		template<const parse_options_internal<derived_type>& options, jsonifier::concepts::unique_ptr_t value_type, typename iterator_type>
 		JSONIFIER_INLINE static void impl(value_type&& value, iterator_type&& iter, iterator_type&& end) {
-			if (!value) {
-				value = std::make_unique<typename value_type::value_type>();
-			}
 			parse_impl<derived_type, decltype(*value)>::template impl<options>(*value, std::forward<iterator_type>(iter), std::forward<iterator_type>(end));
 		}
 	};

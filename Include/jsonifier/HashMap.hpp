@@ -36,7 +36,7 @@
 
 namespace jsonifier_internal {
 
-	constexpr size_t naiveMapMaxSize = 16;
+	constexpr size_t naiveMapMaxSize = 32;
 
 	struct naive_map_desc {
 		size_t N{};
@@ -84,7 +84,6 @@ namespace jsonifier_internal {
 					break;
 				}
 				default: {
-					// zero size case
 					break;
 				}
 			}
@@ -323,64 +322,33 @@ namespace jsonifier_internal {
 
 	struct rt_group {
 		using index_type = std::array<uint8_t, 16>;
-		mutable std::array<uint8_t, 16> indices{};
-		mutable uint8_t indexCount{};
+		uint8_t index{ 0 };
 
 		JSONIFIER_INLINE void extractIndices(uint32_t value) {
-			while (value != 0) {
-				auto idx = simd_internal::tzcnt(value);
-				assert(indexCount < indices.size());
-				indices[indexCount++] = idx;
-				value				  = simd_internal::blsr(value);
-			}
+			index = 0;
+			index = simd_internal::tzcnt(value);
 		}
 
-		JSONIFIER_INLINE auto begin() {
-			return const_iterator<uint8_t>{ indices.data() };
+		JSONIFIER_INLINE uint8_t getIndex() {
+			return index;
 		}
 
-		JSONIFIER_INLINE auto end() {
-			return const_iterator<uint8_t>{ indices.data() + indexCount };
-		}
-
-		JSONIFIER_INLINE bool matchEmpty() {
-			return indexCount == 0;
-		}
-
-		JSONIFIER_INLINE auto& match(const uint8_t* controlBytes, uint8_t hash) {
+		JSONIFIER_INLINE void match(const uint8_t* controlBytes, uint8_t hash) {
 			extractIndices(simd_internal::opCmpEq(simd_internal::gatherValue<simd_int_128>(hash), simd_internal::gatherValues<simd_int_128>(controlBytes)));
-			return indices;
 		}
 	};
 
 	struct ct_group {
 		using index_type = std::array<uint8_t, 16>;
-		std::array<uint8_t, 16> indices{};
-		uint8_t indexCount{};
-
-		constexpr auto extractIndices(uint32_t value) {
-			while (value != 0) {
-				auto idx = tzcnt(value);
-				assert(indexCount < indices.size());
-				indices[indexCount++] = idx;
-				value				  = blsr(value);
-			}
-			return indices;
-		}
-
-		constexpr auto& match(const uint8_t* controlBytes, uint8_t hash) {
-			uint32_t mask = 0;
-			for (int32_t i = 0; i < 16; ++i) {
-				if (controlBytes[i] == hash) {
-					mask |= (1 << i);
-				}
-			}
-			extractIndices(mask);
-			return indices;
-		}
+		uint8_t index{ 0 };
 
 		constexpr ct_group(const uint8_t* controlBytes, uint8_t hash) {
 			match(controlBytes, hash);
+		}
+
+		constexpr void extractIndices(uint32_t value) {
+			index = 0;
+			index = tzcnt(value);
 		}
 
 		constexpr int32_t tzcnt(uint32_t value) const {
@@ -392,33 +360,32 @@ namespace jsonifier_internal {
 			return count;
 		}
 
-		constexpr uint32_t blsr(uint32_t value) const {
-			return value & (value - 1);
+		constexpr uint8_t getIndex() const {
+			return index;
 		}
 
-		constexpr auto begin() const {
-			return const_iterator<uint8_t>{ indices.data() };
-		}
-
-		constexpr auto end() const {
-			return const_iterator<uint8_t>{ indices.data() + indexCount };
-		}
-
-		constexpr bool matchEmpty() const {
-			return indexCount == 0;
+		constexpr void match(const uint8_t* controlBytes, uint8_t hash) {
+			uint32_t mask = 0;
+			for (int32_t i = 0; i < 16; ++i) {
+				if (controlBytes[i] == hash) {
+					mask |= (1 << i);
+				}
+			}
+			extractIndices(mask);
 		}
 	};
 
-	template<typename key_type, typename value_type, size_t N> struct simd_map : public fnv1a_hash {
-		static constexpr uint64_t storageSize = roundUpToMultiple<16ull, uint64_t>(N);
+	inline thread_local rt_group rtGrp{};
+
+	template<typename key_type, typename value_type, size_t N> struct simd_map : public jsonifier_internal::fnv1a_hash {
+		static constexpr uint64_t storageSize = ((N + 15) / 16) * 16;
 		static constexpr auto maxBucketSize	  = 16;
-		static constexpr uint64_t numGroups	  = (storageSize / 16) + (storageSize % 16 != 0 ? 1 : 0);
+		static constexpr uint64_t numGroups	  = (storageSize / 16);
 		uint64_t seed{};
-		using storage_type = fit_unsigned_t<storageSize>;
-		using hasher	   = fnv1a_hash;
+		using storage_type = typename std::conditional<(storageSize < 256), uint8_t, typename std::conditional<(storageSize < 65536), uint16_t, uint32_t>::type>::type;
+		using hasher	   = jsonifier_internal::fnv1a_hash;
 		std::array<std::pair<key_type, value_type>, storageSize> items{};
 		std::array<uint8_t, storageSize> controlBytes{};
-		mutable rt_group grp{};
 
 		constexpr auto begin() const noexcept {
 			return items.begin();
@@ -433,38 +400,36 @@ namespace jsonifier_internal {
 		}
 
 		constexpr auto find(const key_type& key) const noexcept {
+			auto hash			 = fnv1a_hash::operator()(key.data(), key.size(), seed);
+			size_t groupPos		 = H1(hash) % numGroups;
+			size_t startGroupPos = groupPos;
 			if (std::is_constant_evaluated()) {
-				auto hash			 = fnv1a_hash::operator()(key.data(), key.size(), seed);
-				size_t groupPos		 = H1(hash) % numGroups;
-				size_t startGroupPos = groupPos;
-				ct_group grp{ controlBytes.data() + groupPos * 16, H2(hash) };
+				ct_group ctGrp{ controlBytes.data() + groupPos * 16, H2(hash) };
 				do {
-					for (auto iter = grp.begin(); iter != grp.end(); ++iter) {
-						if (key == items[groupPos * 16 + *iter].first) {
-							return items.begin() + groupPos * 16 + *iter;
-						}
+					if (auto resultIndex = ctGrp.getIndex(); resultIndex != -1) {
+						return items.begin() + groupPos * 16 + resultIndex;
 					}
 					groupPos = (groupPos + 1) % numGroups;
 				} while (groupPos != startGroupPos);
-
-				return items.end();
-
 			} else {
-				auto hash			 = fnv1a_hash::operator()(key.data(), key.size(), seed);
-				size_t groupPos		 = H1(hash) % numGroups;
-				size_t startGroupPos = groupPos;
 				do {
-					grp.match(controlBytes.data() + groupPos * 16, H2(hash));
-					for (auto iter = grp.begin(); iter != grp.end(); ++iter) {
-						if (key == items[groupPos * 16 + *iter].first) {
-							return items.begin() + groupPos * 16 + *iter;
-						}
+					rtGrp.match(controlBytes.data() + groupPos * 16, H2(hash));
+					if (auto resultIndex = rtGrp.getIndex(); resultIndex != -1) {
+						return items.begin() + groupPos * 16 + resultIndex;
 					}
 					groupPos = (groupPos + 1) % numGroups;
 				} while (groupPos != startGroupPos);
-
-				return items.end();
 			}
+			return items.end();
+		}
+
+		constexpr bool doesItContainIt(const uint8_t* ctrBytes, uint8_t byteToCheckFor) const {
+			for (uint64_t x = 0; x < 16; ++x) {
+				if (ctrBytes[x] == byteToCheckFor) {
+					return true;
+				}
+			}
+			return false;
 		}
 
 		constexpr simd_map(const std::array<std::pair<key_type, value_type>, N>& pairs) : items{}, controlBytes{} {
@@ -473,45 +438,48 @@ namespace jsonifier_internal {
 			}
 
 			std::array<size_t, numGroups> bucketSizes{};
-			naive_prng gen{};
-			seed = gen();
-
+			seed = 1;
 			bool failed{};
+
 			do {
 				for (auto& controlByte: controlBytes) {
-					controlByte = -1;
+					controlByte = 0;
 				}
-				std::fill(items.data(), items.data() + items.size(), std::pair<key_type, value_type>{});
+				std::fill(items.begin(), items.end(), std::pair<key_type, value_type>{});
+				std::fill(bucketSizes.begin(), bucketSizes.end(), 0);
+
 				failed = false;
 				for (size_t i = 0; i < N; ++i) {
-					const auto hash		  = fnv1a_hash::operator()(pairs[i].first.data(), pairs[i].first.size(), seed);
+					const auto hash		  = hasher::operator()(pairs[i].first.data(), pairs[i].first.size(), seed);
 					const auto groupPos	  = H1(hash) % numGroups;
 					const auto bucketSize = bucketSizes[groupPos]++;
+					const auto ctrlByte	  = H2(hash);
 
-					if (controlBytes[i] != -1) {
+					if (doesItContainIt(controlBytes.data() + groupPos * 16, ctrlByte)) {
 						failed				  = true;
 						bucketSizes[groupPos] = 0;
-						seed				  = gen();
+						++seed;
 						break;
 					}
 					if (bucketSize >= maxBucketSize) {
 						failed				  = true;
 						bucketSizes[groupPos] = 0;
-						seed				  = gen();
+						++seed;
 						break;
 					} else {
-						controlBytes[i] = H2(hash);
-						items[i]		= pairs[i];
+						controlBytes[groupPos * 16 + bucketSize] = ctrlByte;
+						items[groupPos * 16 + bucketSize]		 = pairs[i];
+						failed									 = false;
 					}
 				}
 			} while (failed);
 		}
 
-		static constexpr size_t H1(size_t hash) noexcept {
+		constexpr size_t H1(size_t hash) const noexcept {
 			return hash >> 7;
 		}
 
-		static constexpr uint8_t H2(size_t hash) noexcept {
+		constexpr uint8_t H2(size_t hash) const noexcept {
 			return static_cast<uint8_t>(hash & 0xFF);
 		}
 	};
@@ -784,12 +752,8 @@ namespace jsonifier_internal {
 					if constexpr (sum_desc.valid) {
 						return makeSingleCharMap<value_t, sum_desc>({ keyValue<value_type, I>()... });
 					} else {
-						if constexpr (n < naiveMapMaxSize) {
-							constexpr auto naive_desc = naiveMapHash<n>(keys);
-							return makeNaiveMap<value_t, naive_desc>({ keyValue<value_type, I>()... });
-						} else {
-							return simd_map<jsonifier::string_view, value_t, n>({ keyValue<value_type, I>()... });
-						}
+						constexpr auto naive_desc = naiveMapHash<n>(keys);
+						return makeNaiveMap<value_t, naive_desc>({ keyValue<value_type, I>()... });
 					}
 				}
 			}

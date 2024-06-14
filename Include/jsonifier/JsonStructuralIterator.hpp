@@ -116,7 +116,7 @@ namespace jsonifier_internal {
 			return *currentIndex;
 		}
 
-		JSONIFIER_INLINE bool operator==(const json_structural_iterator& other) const {
+		JSONIFIER_INLINE bool operator==(const json_structural_iterator&other) const {
 			return *currentIndex == *other.currentIndex;
 		}
 

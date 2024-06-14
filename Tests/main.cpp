@@ -2550,7 +2550,7 @@ int32_t main() {
 		std::tm resultTwo{};
 		std::time_t result = std::time(nullptr);
 		resultTwo		   = *localtime(&result);
-		//conformanceTests();
+		conformanceTests();
 		std::vector<test_results> benchmark_data{};
 		newTimeString.resize(strftime(newTimeString.data(), 1024, "%b %d, %Y", &resultTwo));
 		std::string newerString{ static_cast<std::string>(section00) + newTimeString + ")\n" + section001 + static_cast<std::string>(section01) };

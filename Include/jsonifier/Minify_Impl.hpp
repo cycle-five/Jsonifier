@@ -31,24 +31,91 @@ namespace jsonifier_internal {
 
 	template<typename derived_type> struct minify_impl {
 		template<const minify_options_internal<derived_type>& options, jsonifier::concepts::string_t string_type, typename iterator_type>
-		JSONIFIER_INLINE static void impl(iterator_type&& iter, iterator_type&& end, string_type& out, uint64_t& index) noexcept {
-			auto stringStart = iter.getRootPtr();
-			auto stringEnd	 = stringStart;
-			while (iter != end && stringStart && stringEnd) {
-				stringEnd = iter.operator string_view_ptr();
-				std::copy(stringStart, stringEnd, out.data() + index);
-				index += stringEnd - stringStart;
-				stringStart = iter.operator string_view_ptr() + 1;
+		JSONIFIER_INLINE static void impl(iterator_type&& iter, string_type& out, uint64_t& index) noexcept {
+			auto previousPtr = iter.operator->();
+			int64_t currentDistance{};
+
+			++iter;
+
+			while (iter) {
+				switch (asciiClassesMap[*previousPtr]) {
+					[[likely]] case json_structural_type::String: {
+						currentDistance = iter.operator->() - previousPtr;
+						while (whitespaceTable[previousPtr[--currentDistance]]) {
+						}
+						auto newSize = static_cast<uint64_t>(currentDistance) + 1;
+						if (currentDistance > 0) [[likely]] {
+							writeCharactersUnchecked(out, previousPtr, newSize, index);
+						} else {
+							static constexpr auto sourceLocation{ std::source_location::current() };
+							options.minifierPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Minifying, minify_errors::Invalid_String_Length>(
+								iter - iter.getRootPtr(), iter.getEndPtr() - iter.getRootPtr(), iter.getRootPtr()));
+							return;
+						}
+						break;
+					}
+					[[unlikely]] case json_structural_type::Comma:
+						writeCharacterUnchecked<','>(out, index);
+						break;
+					[[likely]] case json_structural_type::Number: {
+						currentDistance = 0;
+						while (!whitespaceTable[previousPtr[++currentDistance]] && ((previousPtr + currentDistance) < iter.operator->())) {
+						}
+						if (currentDistance > 0) [[likely]] {
+							writeCharactersUnchecked(out, previousPtr, currentDistance, index);
+						} else {
+							static constexpr auto sourceLocation{ std::source_location::current() };
+							options.minifierPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Minifying, minify_errors::Invalid_Number_Value>(
+								iter - iter.getRootPtr(), iter.getEndPtr() - iter.getRootPtr(), iter.getRootPtr()));
+							return;
+						}
+						break;
+					}
+					[[unlikely]] case json_structural_type::Colon:
+						writeCharacterUnchecked<0x3A>(out, index);
+						break;
+					[[unlikely]] case json_structural_type::Array_Start:
+						writeCharacterUnchecked<'['>(out, index);
+						break;
+					[[unlikely]] case json_structural_type::Array_End:
+						writeCharacterUnchecked<']'>(out, index);
+						break;
+					[[unlikely]] case json_structural_type::Null: {
+						writeCharactersUnchecked(out, nullString.data(), nullString.size(), index);
+						break;
+					}
+					[[unlikely]] case json_structural_type::Bool: {
+						if (*previousPtr == 't') {
+							writeCharactersUnchecked(out, trueString.data(), trueString.size(), index);
+							break;
+						} else {
+							writeCharactersUnchecked(out, falseString.data(), falseString.size(), index);
+							break;
+						}
+					}
+					[[unlikely]] case json_structural_type::Object_Start:
+						writeCharacterUnchecked<'{'>(out, index);
+						break;
+					[[unlikely]] case json_structural_type::Object_End:
+						writeCharacterUnchecked<'}'>(out, index);
+						break;
+					[[unlikely]] case json_structural_type::Unset:
+					[[unlikely]] case json_structural_type::Error:
+					[[unlikely]] case json_structural_type::Type_Count:
+						[[fallthrough]];
+					[[unlikely]] default: {
+						static constexpr auto sourceLocation{ std::source_location::current() };
+						options.minifierPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Minifying, minify_errors::Incorrect_Structural_Index>(
+							iter - iter.getRootPtr(), iter.getEndPtr() - iter.getRootPtr(), iter.getRootPtr()));
+						return;
+					}
+				}
+				previousPtr = iter.operator->();
 				++iter;
 			}
-			if (stringEnd) {
-				while (whitespaceTable[*stringEnd]) {
-					++stringEnd;
-				}
-				out[index] = *stringEnd;
-				++index;
-			}
+			writeCharacterUnchecked(*previousPtr, out, index);
 		}
 	};
+
 
 }// namespace jsonifier_internal

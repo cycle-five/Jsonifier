@@ -64,8 +64,9 @@ namespace jsonifier_internal {
 			static constexpr auto quotedKey = joinV < chars<"\"">, key, options.optionsReal.prettify ? chars<"\": "> : chars < "\":" >> ;
 			writeCharacters<quotedKey>(buffer, index);
 
-			static decltype(auto) frozenMap = makeMap<value_type>();
-			static const auto memberIt	= frozenMap.find(key);
+			static constexpr auto frozenMap = makeMap<value_type>();
+			static constexpr auto memberIt	= frozenMap.find(key);
+			static_assert(memberIt != frozenMap.end(), "Invalid key passed to partial write");
 			std::visit(
 				[&](auto&& memberPtr) {
 					auto& newMember	  = getMember(value, memberPtr);

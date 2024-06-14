@@ -331,20 +331,20 @@ namespace jsonifier_internal {
 	constexpr auto eBit = static_cast<uint8_t>('E' ^ 'e');
 
 	template<jsonifier::concepts::float_t value_type> inline bool parseFloat(value_type& value, string_view_ptr& iter) noexcept {
-		constexpr auto isVolatile				= std::is_volatile_v<std::remove_reference_t<decltype(value)>>;
-		string_view_ptr sigCut					= nullptr;
+		constexpr auto isVolatile		   = std::is_volatile_v<std::remove_reference_t<decltype(value)>>;
+		string_view_ptr sigCut				   = nullptr;
 		[[maybe_unused]] string_view_ptr sigEnd = nullptr;
-		string_view_ptr dotPos					= nullptr;
-		uint32_t fracZeros						= 0;
-		uint64_t sig							= 0;
-		int32_t exp								= 0;
+		string_view_ptr dotPos				   = nullptr;
+		uint32_t fracZeros				   = 0;
+		uint64_t sig					   = 0;
+		int32_t exp						   = 0;
 		bool expSign;
 		int32_t expSig = 0;
 		int32_t expLit = 0;
 		uint64_t numTmp;
 		string_view_ptr tmp;
 		string_view_ptr hdr = iter;
-		bool sign			= (*hdr == '-');
+		bool sign	   = (*hdr == '-');
 		iter += sign;
 		auto applySign = [&](auto&& value) -> value_type {
 			return sign ? -static_cast<value_type>(value) : static_cast<value_type>(value);

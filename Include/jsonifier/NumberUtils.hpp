@@ -58,7 +58,7 @@ namespace jsonifier {
 	template<uint64_t base = 10> JSONIFIER_INLINE double strToDouble(const jsonifier::string& string) {
 		double newValue{};
 		if (string.size() > 0) [[likely]] {
-			auto currentIter = reinterpret_cast<string_view_ptr>(string.data());
+			auto currentIter = reinterpret_cast<const char*>(string.data());
 			jsonifier_internal::parseFloat(newValue, currentIter);
 		}
 		return newValue;

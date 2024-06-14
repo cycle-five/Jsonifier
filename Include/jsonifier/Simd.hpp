@@ -24,6 +24,7 @@
 #pragma once
 
 #include <jsonifier/JsonStructuralIterator.hpp>
+#include <jsonifier/Base.hpp>
 #include <jsonifier/StringView.hpp>
 #include <sstream>
 #include <cmath>
@@ -65,6 +66,11 @@ namespace jsonifier_internal {
 		uint64_t index{};
 	};
 
+	struct json_indices {
+		std::pair<const char**, const char**> ptrs{};
+		uint64_t count{};
+	};
+
 	template<bool doWeUseInitialBuffer> class simd_string_reader : public alloc_wrapper<structural_index> {
 	  public:
 		using size_type = uint64_t;
@@ -74,52 +80,35 @@ namespace jsonifier_internal {
 		JSONIFIER_INLINE simd_string_reader() {
 			if constexpr (doWeUseInitialBuffer) {
 				resize(static_cast<uint64_t>(static_cast<double>(1024 * 1024 * 4) * 0.85f));
-				std::uninitialized_fill(structuralIndices, structuralIndices + structuralIndicesCount, nullptr);
 			}
 		}
 
-		JSONIFIER_INLINE void reset(string_view_ptr stringViewNew, size_type size) {
+		template<typename char_type> JSONIFIER_INLINE void reset(char_type* stringViewNew, size_type size) {
 			currentParseBuffer = jsonifier::string_view_base{ reinterpret_cast<string_view_ptr>(stringViewNew), size };
 			auto newSize	   = roundUpToMultiple<8ull>(static_cast<uint64_t>(static_cast<double>(currentParseBuffer.size()) * multiplier));
-			if (structuralIndicesCount < newSize) [[unlikely]] {
+			if (structuralIndexCount < newSize) [[unlikely]] {
 				resize(newSize * 2);
 			}
-			resetInternal<false>();
+			resetInternal();
 		}
 
-		JSONIFIER_INLINE void resetToMinify(string_view_ptr stringViewNew, size_type size) {
-			currentParseBuffer = jsonifier::string_view_base{ reinterpret_cast<string_view_ptr>(stringViewNew), size };
-			auto newSize	   = roundUpToMultiple<8ull>(static_cast<uint64_t>(static_cast<double>(currentParseBuffer.size()) * multiplier));
-			if (structuralIndicesCount < newSize) [[unlikely]] {
-				resize(newSize * 2);
-			}
-			resetInternal<true>();
-			for (uint64_t x = tapeIndex; x > 0; --x) {
-				if (structuralIndices[x] - currentParseBuffer.data() > currentParseBuffer.size()) {
-					--tapeIndex;
-				} else {
-					break;
-				}
-			}
-		}
-
-		template<bool refreshString> JSONIFIER_INLINE std::string resetWithErrorPrintOut(string_view_ptr stringViewNew, size_type size, size_type errorIndex) {
+		template<bool refreshString, typename char_type> JSONIFIER_INLINE std::string resetWithErrorPrintOut(char_type* stringViewNew, size_type size, size_type errorIndex) {
 			std::string returnValue{ "For the following string values: " };
 			if (static_cast<int64_t>(errorIndex) < std::string{}.max_size()) {
-				returnValue += std::string_view{ reinterpret_cast<string_view_ptr>(stringViewNew + errorIndex), 24 };
+				returnValue += std::string_view{ reinterpret_cast<const char*>(stringViewNew + errorIndex), 24 };
 				returnValue += "\n";
 			}
 			if constexpr (refreshString) {
 				currentParseBuffer = { reinterpret_cast<string_view_ptr>(stringViewNew), size };
 				auto newSize	   = roundUpToMultiple<8ull>(static_cast<uint64_t>(static_cast<double>(currentParseBuffer.size()) * multiplier));
-				if (structuralIndicesCount < newSize) {
+				if (structuralIndexCount < newSize) {
 					resize(newSize * 2);
 				}
 				return returnValue + resetInternalWithErrorPrintOut(errorIndex);
 			} else if (currentParseBuffer != stringViewNew) {
 				currentParseBuffer = { reinterpret_cast<string_view_ptr>(stringViewNew), size };
 				auto newSize	   = roundUpToMultiple<8ull>(static_cast<uint64_t>(static_cast<double>(currentParseBuffer.size()) * multiplier));
-				if (structuralIndicesCount < newSize) {
+				if (structuralIndexCount < newSize) {
 					resize(newSize * 2);
 				}
 				return returnValue + resetInternalWithErrorPrintOut(errorIndex);
@@ -131,19 +120,15 @@ namespace jsonifier_internal {
 		}
 
 		JSONIFIER_INLINE auto begin() {
-			if (structuralIndicesCount > tapeIndex) {
-				structuralIndices[structuralIndicesCount - 1] = nullptr;
+			if (structuralIndexCount > tapeIndex + 1) {
+				structuralIndices[tapeIndex]			= nullptr;
+				structuralIndices[structuralIndexCount - 1] = nullptr;
 			}
 			return structuralIndices;
 		}
 
 		JSONIFIER_INLINE ~simd_string_reader() {
-			if (structuralIndices) {
-				std::destroy_n(structuralIndices, structuralIndicesCount);
-				allocator::deallocate(structuralIndices);
-				structuralIndices	   = nullptr;
-				structuralIndicesCount = 0;
-			}
+			clear();
 		}
 
 	  protected:
@@ -157,29 +142,19 @@ namespace jsonifier_internal {
 		jsonifier::string_view currentParseBuffer{};
 		string_block_reader stringBlockReader{};
 		structural_index* structuralIndices{};
-		size_type structuralIndicesCount{};
+		size_type structuralIndexCount{};
 		size_type stringIndex{};
 		int64_t prevInString{};
 		size_type tapeIndex{};
 		bool overflow{};
 
-		template<bool minifying> JSONIFIER_INLINE void resetInternal() {
+		JSONIFIER_INLINE void resetInternal() {
 			stringBlockReader.reset(currentParseBuffer.data(), currentParseBuffer.size());
 			overflow	 = false;
 			prevInString = 0;
 			stringIndex	 = 0;
 			tapeIndex	 = 0;
-			generateJsonIndices<minifying>();
-		}
-
-		JSONIFIER_INLINE void resize(size_type newSize) {
-			if (structuralIndices) {
-				std::destroy_n(structuralIndices, structuralIndicesCount);
-				allocator::deallocate(structuralIndices);
-				structuralIndices = nullptr;
-			}
-			structuralIndicesCount = newSize;
-			structuralIndices	   = allocator::allocate(structuralIndicesCount);
+			generateJsonIndices();
 		}
 
 		JSONIFIER_INLINE std::string resetInternalWithErrorPrintOut(size_type errorIndex) {
@@ -189,16 +164,41 @@ namespace jsonifier_internal {
 			return generateJsonIndicesWithErrorPrintOut(errorIndex);
 		}
 
-		template<bool minifying> JSONIFIER_INLINE void generateJsonIndices() {
+		template<char c, bool minified> JSONIFIER_INLINE void generateJsonIndicesSingle() {
 			while (stringBlockReader.hasFullBlock()) {
-				generateStructurals<minifying, false>(stringBlockReader.fullBlock());
+				generateStructuralsSingle<c, false>(stringBlockReader.fullBlock());
 			}
 			if (stringBlockReader.getRemainder(block) > 0) [[likely]] {
-				generateStructurals<minifying, true>(block);
+				generateStructuralsSingle<c, true>(block);
 			}
 		}
 
-		template<size_type index> JSONIFIER_INLINE auto rollValuesIntoTape(size_type currentIndex, size_type newBits) {
+		JSONIFIER_INLINE void generateJsonIndices() {
+			while (stringBlockReader.hasFullBlock()) {
+				generateStructurals<false>(stringBlockReader.fullBlock());
+			}
+			if (stringBlockReader.getRemainder(block) > 0) [[likely]] {
+				generateStructurals<true>(block);
+			}
+		}
+
+		JSONIFIER_INLINE void clear() {
+			if (structuralIndices) {
+				std::destroy(structuralIndices, structuralIndices + structuralIndexCount);
+				allocator::deallocate(structuralIndices);
+				structuralIndices	 = nullptr;
+				structuralIndexCount = 0;
+			}
+		}
+
+		JSONIFIER_INLINE void resize(size_type newSize) {
+			clear();
+			structuralIndices = allocator::allocate(newSize);
+			std::uninitialized_fill(structuralIndices, structuralIndices + newSize, nullptr);
+			structuralIndexCount = newSize;
+		}
+
+		template<size_type index> JSONIFIER_INLINE size_type rollValuesIntoTape(size_type currentIndex, size_type newBits) {
 			static constexpr uint64_t bitTotal{ index * 64ull };
 			structuralIndices[0 + (currentIndex * 8) + tapeIndex] = currentParseBuffer.data() + static_cast<uint32_t>(simd_internal::tzcnt(newBits) + bitTotal + stringIndex);
 			newBits												  = simd_internal::blsr(newBits);
@@ -241,16 +241,11 @@ namespace jsonifier_internal {
 			}
 		}
 
-		template<bool minifying, bool collectAligned> JSONIFIER_INLINE void generateStructurals(string_view_ptr values) {
+		template<bool collectAligned> JSONIFIER_INLINE void generateStructurals(string_view_ptr values) {
 			collectStringValues<collectAligned>(values);
 			rawStructurals = simd_internal::collectIndices(newPtr);
-			if constexpr (minifying) {
-				identifyNonStringWhitespace();
-				simd_internal::store(rawStructurals.op, newBits);
-			} else {
-				collectStructurals();
-				simd_internal::store(rawStructurals.op, newBits);
-			}
+			collectStructurals();
+			simd_internal::store(rawStructurals.op, newBits);
 			addTapeValues();
 			stringIndex += BitsPerStep;
 		}
@@ -301,13 +296,6 @@ namespace jsonifier_internal {
 			simd_int_t potentialScalarStart		= simd_internal::opAndNot(scalar, followsNonQuoteScalar);
 			simd_int_t porentialStructuralStart = simd_internal::opOr(rawStructurals.op, potentialScalarStart);
 			rawStructurals.op					= simd_internal::opAndNot(porentialStructuralStart, stringTail);
-		}
-
-		JSONIFIER_INLINE void identifyNonStringWhitespace() {
-			collectEscapedCharacters();
-			rawStructurals.quotes = simd_internal::opAndNot(rawStructurals.quotes, escaped);
-			simd_int_t inString	  = simd_internal::opClMul(rawStructurals.quotes, prevInString);
-			rawStructurals.op	  = simd_internal::opAndNot(rawStructurals.whitespace, inString);
 		}
 
 		JSONIFIER_INLINE std::string collectEscapedCharactersWithErrorPrintOut(size_type errorIndex) {

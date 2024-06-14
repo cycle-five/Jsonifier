@@ -129,8 +129,7 @@ namespace jsonifier_internal {
 		index += n;
 	}
 
-	template<jsonifier::concepts::buffer_like buffer_type>
-	JSONIFIER_INLINE void writeCharacters(buffer_type& buffer, string_view_ptr str, uint64_t size, uint64_t& index) noexcept {
+	template<jsonifier::concepts::buffer_like buffer_type> JSONIFIER_INLINE void writeCharacters(buffer_type& buffer, const char* str, uint64_t size, uint64_t& index) noexcept {
 		auto n = size;
 
 		if (index + n > buffer.size()) [[unlikely]] {
@@ -141,7 +140,7 @@ namespace jsonifier_internal {
 	}
 
 	template<jsonifier::concepts::buffer_like buffer_type>
-	JSONIFIER_INLINE void writeCharactersUnchecked(buffer_type& buffer, string_view_ptr str, uint64_t size, uint64_t& index) noexcept {
+	JSONIFIER_INLINE void writeCharactersUnchecked(buffer_type& buffer, const char* str, uint64_t size, uint64_t& index) noexcept {
 		std::memcpy(buffer.data() + index, str, size);
 		index += size;
 	}

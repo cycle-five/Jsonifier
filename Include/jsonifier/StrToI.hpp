@@ -42,8 +42,10 @@ namespace jsonifier_internal {
 		return a <= b;
 	}
 
-	template<jsonifier::concepts::integer_t value_type> JSONIFIER_INLINE bool parseInt(value_type& value, string_view_ptr& iter) {
+	template<jsonifier::concepts::integer_t value_type_new> JSONIFIER_INLINE bool parseInt(value_type_new& value, auto& iter) {
+		using value_type		  = jsonifier::concepts::unwrap_t<value_type_new>;
 		constexpr auto isVolatile = std::is_volatile_v<std::remove_reference_t<decltype(value)>>;
+		using char_type			  = decltype(iter);
 		uint64_t sig			  = uint64_t(numberSubTable[static_cast<uint64_t>(*iter)]);
 		uint64_t numTmp;
 
@@ -87,7 +89,7 @@ namespace jsonifier_internal {
 			return false;
 	}
 
-	template<typename value_type> constexpr bool stoui64(value_type& res, string_view_ptr c) noexcept {
+	template<typename value_type, typename char_type> constexpr bool stoui64(value_type& res, const char_type* c) noexcept {
 		if (!digitTableBool[static_cast<uint64_t>(*c)]) [[unlikely]] {
 			return false;
 		}

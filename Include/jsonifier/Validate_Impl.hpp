@@ -32,7 +32,8 @@ namespace jsonifier_internal {
 	}
 
 	template<typename derived_type> struct validate_impl<json_structural_type::Object_Start, derived_type> {
-		template<const validate_options_internal<derived_type>& options, typename iterator_type> static bool impl(iterator_type&& iter, iterator_type&& end, uint64_t& depth) {
+		template<const validate_options_internal<derived_type>& options, typename iterator_type>
+		static bool impl(iterator_type&& iter, iterator_type&& end, uint64_t& depth) {
 			if (!iter || *iter != '{') {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				options.validatorPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Validating, validate_errors::Missing_Object_Start>(
@@ -100,7 +101,8 @@ namespace jsonifier_internal {
 	};
 
 	template<typename derived_type> struct validate_impl<json_structural_type::Array_Start, derived_type> {
-		template<const validate_options_internal<derived_type>& options, typename iterator_type> static bool impl(iterator_type&& iter, iterator_type&& end, uint64_t& depth) {
+		template<const validate_options_internal<derived_type>& options, typename iterator_type>
+		static bool impl(iterator_type&& iter, iterator_type&& end, uint64_t& depth) {
 			if (!iter || *iter != '[') {
 				static constexpr auto sourceLocation{ std::source_location::current() };
 				options.validatorPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Validating, validate_errors::Missing_Array_Start>(
@@ -305,18 +307,14 @@ namespace jsonifier_internal {
 			static constexpr char falseStr[]{ "false" };
 			static constexpr char trueStr[]{ "true" };
 			skipWs(newPtr);
-			if (getRemainingLength(iter, end) >= 4) {
-				if (std::memcmp(newPtr, trueStr, std::strlen(trueStr)) == 0) {
-					newPtr += std::strlen(trueStr) - 1;
-				} else if (std::memcmp(newPtr, falseStr, std::strlen(falseStr)) == 0) {
-					newPtr += std::strlen(falseStr) - 1;
-				} else {
-					static constexpr auto sourceLocation{ std::source_location::current() };
-					options.validatorPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Validating, validate_errors::Invalid_Bool_Value>(
-						iter - iter.getRootPtr(), iter.getEndPtr() - iter.getRootPtr(), iter.getRootPtr()));
-					return false;
-				}
+			if (getRemainingLength(iter, end) >= 4 && std ::memcmp(newPtr, trueStr, std::strlen(trueStr)) == 0) {
+				newPtr += std::strlen(trueStr) - 1;
+			} else if (getRemainingLength(iter, end) >= 5 && std::memcmp(newPtr, falseStr, std::strlen(falseStr)) == 0) {
+				newPtr += std::strlen(falseStr) - 1;
 			} else {
+				static constexpr auto sourceLocation{ std::source_location::current() };
+				options.validatorPtr->getErrors().emplace_back(error::constructError<sourceLocation, error_classes::Validating, validate_errors::Invalid_Bool_Value>(
+					iter - iter.getRootPtr(), iter.getEndPtr() - iter.getRootPtr(), iter.getRootPtr()));
 				return false;
 			}
 			return iter.operator bool();
